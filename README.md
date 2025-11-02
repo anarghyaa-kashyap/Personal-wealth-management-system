@@ -21,11 +21,9 @@ This project was built to demonstrate the practical application of core data str
 
 2.  **General Tree (Non-Linear):**
     * **Purpose:** Each user has their own tree to **organize wealth categories**. It is implemented using a "first child, next sibling" representation.
-    * **Why:** A tree is the most natural way to represent hierarchical data. The root is the user, with main branches like "Investments" and "Expenses," which in turn have their own children ("stock," "gold," "health," etc.). This allows for clean, recursive net worth calculation.
+    * **Why:** A tree is used to represent the hierarchical data. The root is the user, with main branches like "Investments" and "Expenses," which in turn have their own children ("stock," "gold," "health," etc.). This allows for clean, recursive net worth calculation.
 
 3.  **Singly Linked List (Linear):**
     * **Purpose:** Each user has their own linked list to **log all individual transactions**.
     * **Why:** We needed a dynamic structure to store an unknown number of transactions. A linked list provides efficient $O(1)$ insertion for new expenses and serves as the "raw data" log that feeds the other data structures.
 
-```bash
-gcc main.c wealth_functions.c -o wealth_manager
