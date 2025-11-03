@@ -95,6 +95,7 @@ void heapInsert(UserHeap* heap, UserProfile* user);
 UserProfile* getTopWealthUser(UserHeap* heap);
 int findUserIndex(UserHeap* heap, UserProfile* user);
 void displayHeap(UserHeap* heap);
+double sumAllDescendants(WealthNode* firstChild);
 
 // --- 3. Core Integration Functions ---
 double calculateNetWorth(WealthNode* root);
