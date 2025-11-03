@@ -5,32 +5,73 @@
 
 WealthNode* createWealthNode(const char* name, double value) {
     //Ahana
-    return NULL;
+    WealthNode* newNode = (WealthNode*)malloc(sizeof(WealthNode));
+    if (newNode == NULL) {
+        printf("ERROR: Memory allocation failed for WealthNode.\n");
+        exit(1);
+    }
+    strcpy(newNode->name, name);
+    newNode->value = value;
+    newNode->firstChild = NULL;
+    newNode->nextSibling = NULL;
+    return newNode;
 }
 
 void addWealthChild(WealthNode* parent, WealthNode* newChild) {
     //Ahana
+    if (parent == NULL || newChild == NULL){ //if the parent has no child
+        return; 
+    }
+    if (parent->firstChild == NULL) {
+        parent->firstChild = newChild;
+    } else {
+        WealthNode* temp = parent->firstChild;
+        while (temp->nextSibling != NULL){ //going to the last child
+            temp = temp->nextSibling;
+        }
+        temp->nextSibling = newChild;
+    }
 }
 
 WealthNode* findWealthNode(WealthNode* root, const char* name) {
     //Ahana
-    return NULL;
+    if (root == NULL) {
+        return NULL;
+    }
+    if (strcmp(root->name, name) == 0) {
+        return root; 
+    }
+    WealthNode* found = findWealthNode(root->firstChild, name);
+    if (found != NULL) {
+        return found;
+    }
+    return findWealthNode(root->nextSibling, name);
 }
 
 void printWealthTree(WealthNode* root, int indent) {
     //Ahana
+    if (root == NULL) {
+        return; 
+    }
+    for (int i = 0; i < indent; i++) {
+        printf(" ");
+    }
+    printf("+- %s: ($%.2f)\n", root->name, root->value);
+    printWealthTree(root->firstChild, indent + 4);
+    printWealthTree(root->nextSibling, indent);
 }
 
 
 void freeWealthTree(WealthNode* root) {
     //Ahana
+    if (root == NULL) {
+        return; 
+    }
+    freeWealthTree(root->firstChild);
+    freeWealthTree(root->nextSibling);
+    free(root);
 }
 
-// ===== Person 2: Max-Heap Operations =====
-#include "wealth.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 /* Compare two users for MAX-heap order.
    Higher netWorth = higher priority.
