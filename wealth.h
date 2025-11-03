@@ -99,7 +99,7 @@ double sumAllDescendants(WealthNode* firstChild);
 
 // --- 3. Core Integration Functions ---
 double calculateNetWorth(WealthNode* root);
-
+static int userCompare(const UserProfile* a, const UserProfile* b)
 /**
  * @brief SIMPLIFIED: Only logs the expense to the linear list.
  * Does NOT update tree or heap. Use for clean separation of concerns.
@@ -133,5 +133,6 @@ void printWealthTree(WealthNode* root, int indent);
 void freeExpenseList(ExpenditureNode* head);
 void freeWealthTree(WealthNode* root);
 void freeHeap(UserHeap* heap);
+
 
 #endif // WEALTH_H
