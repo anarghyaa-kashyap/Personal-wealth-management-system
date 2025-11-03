@@ -5,92 +5,154 @@
 
 WealthNode* createWealthNode(const char* name, double value) {
     //Ahana
-    WealthNode* newNode = (WealthNode*)malloc(sizeof(WealthNode));
-    if (newNode == NULL) {
-        printf("ERROR: Memory allocation failed for WealthNode.\n");
-        exit(1);
-    }
-    strcpy(newNode->name, name);
-    newNode->value = value;
-    newNode->firstChild = NULL;
-    newNode->nextSibling = NULL;
-    return newNode;
+    return NULL;
 }
 
 void addWealthChild(WealthNode* parent, WealthNode* newChild) {
     //Ahana
-    if (parent == NULL || newChild == NULL){ //if the parent has no child
-        return; 
-    }
-    if (parent->firstChild == NULL) {
-        parent->firstChild = newChild;
-    } else {
-        WealthNode* temp = parent->firstChild;
-        while (temp->nextSibling != NULL){ //going to the last child
-            temp = temp->nextSibling;
-        }
-        temp->nextSibling = newChild;
-    }
 }
 
 WealthNode* findWealthNode(WealthNode* root, const char* name) {
     //Ahana
-    if (root == NULL) {
-        return NULL;
-    }
-    if (strcmp(root->name, name) == 0) {
-        return root; 
-    }
-    WealthNode* found = findWealthNode(root->firstChild, name);
-    if (found != NULL) {
-        return found;
-    }
-    return findWealthNode(root->nextSibling, name);
+    return NULL;
 }
 
 void printWealthTree(WealthNode* root, int indent) {
     //Ahana
-    if (root == NULL) {
-        return; 
-    }
-    for (int i = 0; i < indent; i++) {
-        printf(" ");
-    }
-    printf("+- %s: ($%.2f)\n", root->name, root->value);
-    printWealthTree(root->firstChild, indent + 4);
-    printWealthTree(root->nextSibling, indent);
 }
 
 
 void freeWealthTree(WealthNode* root) {
     //Ahana
-    if (root == NULL) {
-        return; 
-    }
-    freeWealthTree(root->firstChild);
-    freeWealthTree(root->nextSibling);
-    free(root);
 }
 
+// ===== Person 2: Max-Heap Operations =====
+#include "wealth.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+/* Compare two users for MAX-heap order.
+   Higher netWorth = higher priority.
+   If equal, name earlier in A–Z = higher priority. */
+static int userCompare(const UserProfile* a, const UserProfile* b) {
+    if (a == NULL && b == NULL) return 0;
+    if (a == NULL) return -1;
+    if (b == NULL) return 1;
+
+    if (a->netWorth > b->netWorth) return 1;
+    if (a->netWorth < b->netWorth) return -1;
+
+    /* tie-break by name */
+    int cmp = strcmp(a->name, b->name);
+    if (cmp < 0) return 1;     /* a should be above b */
+    if (cmp > 0) return -1;    /* a should be below b */
+    return 0;
+}
+
+/* Create heap with given capacity (at least 1). */
 UserHeap* createHeap(int capacity) {
-    //Anarghyaa
-    return NULL;
+    if (capacity <= 0) capacity = 1;
+
+    UserHeap* heap = (UserHeap*)malloc(sizeof(UserHeap));
+    if (heap == NULL) {
+        printf("Heap alloc failed.\n");
+        return NULL;
+    }
+
+    heap->userArray = (UserProfile**)malloc(sizeof(UserProfile*) * capacity);
+    if (heap->userArray == NULL) {
+        printf("Heap array alloc failed.\n");
+        free(heap);
+        return NULL;
+    }
+
+    /* initialize slots to NULL */
+    for (int i = 0; i < capacity; i++) heap->userArray[i] = NULL;
+
+    heap->size = 0;
+    heap->capacity = capacity;
+    return heap;
 }
 
+/* Swap two positions in the heap array. */
 void swapUsers(UserHeap* heap, int i, int j) {
-    //Anarghyaa
+    if (heap == NULL || heap->userArray == NULL) return;
+    if (i < 0 || j < 0 || i >= heap->size || j >= heap->size) return;
+
+    UserProfile* temp = heap->userArray[i];
+    heap->userArray[i] = heap->userArray[j];
+    heap->userArray[j] = temp;
 }
 
+/* Move a node up until heap property holds. */
 void heapifyUp(UserHeap* heap, int index) {
-    //Anarghyaa
+    if (heap == NULL || heap->userArray == NULL) return;
+
+    while (index > 0) {
+        int parent = (index - 1) / 2;
+
+        /* if child has higher priority than parent, swap */
+        if (userCompare(heap->userArray[index], heap->userArray[parent]) > 0) {
+            swapUsers(heap, index, parent);
+            index = parent;
+        } else {
+            break;
+        }
+    }
 }
 
+/* Move a node down until heap property holds. */
 void heapifyDown(UserHeap* heap, int index) {
-    //Anarghyaa
+    if (heap == NULL || heap->userArray == NULL) return;
+
+    while (1) {
+        int left = index * 2 + 1;
+        int right = index * 2 + 2;
+        int largest = index;
+
+        if (left < heap->size &&
+            userCompare(heap->userArray[left], heap->userArray[largest]) > 0) {
+            largest = left;
+        }
+        if (right < heap->size &&
+            userCompare(heap->userArray[right], heap->userArray[largest]) > 0) {
+            largest = right;
+        }
+
+        if (largest != index) {
+            swapUsers(heap, index, largest);
+            index = largest;
+        } else {
+            break;
+        }
+    }
 }
 
+/* Insert a user and fix heap order. Grows array when full. */
 void heapInsert(UserHeap* heap, UserProfile* user) {
-    //Anarghyaa
+    if (heap == NULL || heap->userArray == NULL || user == NULL) return;
+
+    /* grow capacity if needed */
+    if (heap->size >= heap->capacity) {
+        int newCap = heap->capacity * 2;
+        UserProfile** newArr =
+            (UserProfile**)realloc(heap->userArray, sizeof(UserProfile*) * newCap);
+        if (newArr == NULL) {
+            printf("Heap resize failed.\n");
+            return;
+        }
+        /* init new slots */
+        for (int i = heap->capacity; i < newCap; i++) newArr[i] = NULL;
+
+        heap->userArray = newArr;
+        heap->capacity = newCap;
+    }
+
+    /* place at end, then bubble up */
+    heap->userArray[heap->size] = user;
+    heapifyUp(heap, heap->size);
+    heap->size++;
 }
 
 UserProfile* getTopWealthUser(UserHeap* heap) {
