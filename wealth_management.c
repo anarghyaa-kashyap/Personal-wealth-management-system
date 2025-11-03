@@ -419,24 +419,114 @@ void freeHeap(UserHeap* heap) {
 
 void logExpenseToList(UserProfile* user, const char* category, const char* desc,double amount, InvestmentType invType) {
     //Annanya
+     if (!user || !category || !desc || amount < 0) {
+        printf("Invalid transaction details.\n");
+        return;
+    }
+    ExpenditureNode* newNode = malloc(sizeof(ExpenditureNode));
+    if (!newNode) {
+        printf("Memory allocation failed.\n");
+        return;
+    }
+
+    strcpy(newNode->category, category);
+    strcpy(newNode->description, desc);
+    newNode->amount = amount;
+    newNode->invType = invType;
+    newNode->next = user->expenseHead;
+    user->expenseHead = newNode;
+
+    printf("Transaction added: [%s] %s - %.2f\n", category, desc, amount);
 }
 
 void updateInvestmentValue(UserProfile* user, const char* nodeName, double newValue) {
     //Annanya
+      if (!user || !user->wealthRoot || !nodeName) {
+        printf("Invalid input to updateInvestmentValue.\n");
+        return;
+    }
+    WealthNode* node = findWealthNode(user->wealthRoot, nodeName);
+    if (!node) {
+        printf("Category '%s' not found.\n", nodeName);
+        return;
+    }
+    if (newValue < 0) {
+        printf("Negative value not allowed.\n");
+        return;
+    }
+    node->value = newValue;
+    printf("Updated '%s' to %.2f\n", nodeName, newValue);
+    
 }
 
 void updateExpenseCategoryTotal(UserProfile* user, const char* category, double amount) {
     //Annanya
+     if (!user || !user->wealthRoot || !category) {
+        printf("Invalid input to updateExpenseCategoryTotal.\n");
+        return;
+    }
+    WealthNode* node = findWealthNode(user->wealthRoot, category);
+    if (!node) {
+        printf("Category '%s' not found.\n", category);
+        return;
+    }
+    node->value += amount;
+    printf("Added %.2f to '%s' (New Total: %.2f)\n", amount, category, node->value);
 }
 
 void registerNewUser(const char* name, const char* gender) {
     //Annanya
+     if (!name || !gender) {
+        printf("Invalid user details.\n");
+        return NULL;
+    }
+    UserProfile* user = malloc(sizeof(UserProfile));
+    if (!user) {
+        printf("Memory allocation failed.\n");
+        return NULL;
+    }
+
+    strcpy(user->name, name);
+    strcpy(user->gender, gender);
+    user->netWorth = 0.0;
+    user->expenseHead = NULL;
+
+    user->wealthRoot = malloc(sizeof(WealthNode));
+    if (!user->wealthRoot) {
+        free(user);
+        printf("Memory allocation failed.\n");
+        return NULL;
+    }
+
+    strcpy(user->wealthRoot->name, name);
+    user->wealthRoot->value = 0.0;
+    user->wealthRoot->firstChild = NULL;
+    user->wealthRoot->nextSibling = NULL;
+
+    printf("User '%s' registered successfully.\n", name);
+    return user;
 }
 
 void printExpenseLog(ExpenditureNode* head) {
     //Annanya
+     if (!head) {
+        printf("No transactions found.\n");
+        return;
+    }
+    printf("\n--- Transaction Log ---\n");
+    for (ExpenditureNode* temp = head; temp; temp = temp->next)
+        printf("[%s] %s - %.2f\n", temp->category, temp->description, temp->amount);
 }
 
 void freeExpenseList(ExpenditureNode* head) {
     //Annanya
+    ExpenditureNode* temp;
+    while (head) {
+        temp = head;
+        head = head->next;
+        free(temp);
+    }
+    printf("Expense list cleared successfully.\n");
+}
+
 }
