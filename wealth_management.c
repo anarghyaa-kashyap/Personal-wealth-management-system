@@ -417,35 +417,45 @@ void freeHeap(UserHeap* heap) {
     free(heap);
 }
 
-void logExpenseToList(UserProfile* user, const char* category, const char* desc,double amount, InvestmentType invType) {
+void logExpenseToList(UserProfile* user, const char* category, const char* desc, double amount, InvestmentType invType) {
     //Annanya
      if (!user || !category || !desc || amount < 0) {
         printf("Invalid transaction details.\n");
         return;
     }
-    ExpenditureNode* newNode = malloc(sizeof(ExpenditureNode));
+    ExpenditureNode* newNode = (ExpenditureNode*)malloc(sizeof(ExpenditureNode));
     if (!newNode) {
         printf("Memory allocation failed.\n");
         return;
     }
 
-    strcpy(newNode->category, category);
-    strcpy(newNode->description, desc);
+    // Use strncpy for safety
+    strncpy(newNode->category, category, 49);
+    newNode->category[49] = '\0';
+    strncpy(newNode->description, desc, 99);
+    newNode->description[99] = '\0';
+    
     newNode->amount = amount;
-    newNode->invType = invType;
-    newNode->next = user->expenseHead;
-    user->expenseHead = newNode;
+    newNode->investmentType = invType; // <-- CORRECTED: invType was wrong
+    newNode->date = time(NULL); // Add timestamp
+    
+    // *** BUG FIX: Use correct struct member name ***
+    newNode->next = user->expenseListHead;
+    user->expenseListHead = newNode;
 
     printf("Transaction added: [%s] %s - %.2f\n", category, desc, amount);
 }
 
 void updateInvestmentValue(UserProfile* user, const char* nodeName, double newValue) {
     //Annanya
-      if (!user || !user->wealthRoot || !nodeName) {
+     if (!user || !user->wealthTreeRoot || !nodeName) { // *** BUG FIX: wealthTreeRoot ***
         printf("Invalid input to updateInvestmentValue.\n");
         return;
     }
-    WealthNode* node = findWealthNode(user->wealthRoot, nodeName);
+    
+    // *** BUG FIX: wealthTreeRoot ***
+    WealthNode* node = findWealthNode(user->wealthTreeRoot, nodeName);
+    
     if (!node) {
         printf("Category '%s' not found.\n", nodeName);
         return;
@@ -454,74 +464,108 @@ void updateInvestmentValue(UserProfile* user, const char* nodeName, double newVa
         printf("Negative value not allowed.\n");
         return;
     }
+    
     node->value = newValue;
     printf("Updated '%s' to %.2f\n", nodeName, newValue);
     
+    // *** BUG FIX: CRITICAL INTERCONNECTIVITY STEP ***
+    finalizeUserUpdates(user);
 }
 
 void updateExpenseCategoryTotal(UserProfile* user, const char* category, double amount) {
     //Annanya
-     if (!user || !user->wealthRoot || !category) {
+    if (!user || !user->wealthTreeRoot || !category) { // *** BUG FIX: wealthTreeRoot ***
         printf("Invalid input to updateExpenseCategoryTotal.\n");
         return;
     }
-    WealthNode* node = findWealthNode(user->wealthRoot, category);
+    
+    // *** BUG FIX: wealthTreeRoot ***
+    WealthNode* node = findWealthNode(user->wealthTreeRoot, category);
+    
     if (!node) {
         printf("Category '%s' not found.\n", category);
         return;
     }
+    
     node->value += amount;
     printf("Added %.2f to '%s' (New Total: %.2f)\n", amount, category, node->value);
+    
+    // *** BUG FIX: CRITICAL INTERCONNECTIVITY STEP ***
+    finalizeUserUpdates(user);
 }
 
 void registerNewUser(const char* name, const char* gender) {
     //Annanya
-     if (!name || !gender) {
+    if (!name || !gender) {
         printf("Invalid user details.\n");
-        return NULL;
+        return; // Changed to void return
     }
-    UserProfile* user = malloc(sizeof(UserProfile));
+    UserProfile* user = (UserProfile*)malloc(sizeof(UserProfile));
     if (!user) {
         printf("Memory allocation failed.\n");
-        return NULL;
+        return; // Changed to void return
     }
 
-    strcpy(user->name, name);
-    strcpy(user->gender, gender);
+    // 1. Set basic info
+    strncpy(user->name, name, 49);
+    user->name[49] = '\0';
+    strncpy(user->gender, gender, 9);
+    user->gender[9] = '\0';
+    
     user->netWorth = 0.0;
-    user->expenseHead = NULL;
+    
+    // *** BUG FIX: Use correct struct member name ***
+    user->expenseListHead = NULL;
 
-    user->wealthRoot = malloc(sizeof(WealthNode));
-    if (!user->wealthRoot) {
-        free(user);
-        printf("Memory allocation failed.\n");
-        return NULL;
-    }
+    // 2. Build the default Wealth Tree
+    // *** BUG FIX: Use correct struct member name ***
+    user->wealthTreeRoot = createWealthNode(name, 0.0); 
+    
+    // Build main branches
+    WealthNode* investments = createWealthNode("Investments", 0.0);
+    WealthNode* expenses = createWealthNode("Expenses", 0.0);
+    
+    addWealthChild(user->wealthTreeRoot, investments);
+    addWealthChild(user->wealthTreeRoot, expenses);
 
-    strcpy(user->wealthRoot->name, name);
-    user->wealthRoot->value = 0.0;
-    user->wealthRoot->firstChild = NULL;
-    user->wealthRoot->nextSibling = NULL;
+    // Add investment sub-nodes (based on enum)
+    addWealthChild(investments, createWealthNode("gold", 0.0));
+    addWealthChild(investments, createWealthNode("stock", 0.0));
+    addWealthChild(investments, createWealthNode("property", 0.0));
+    addWealthChild(investments, createWealthNode("others", 0.0));
+
+    // Add expense sub-nodes (based on main.c)
+    addWealthChild(expenses, createWealthNode("health", 0.0));
+    addWealthChild(expenses, createWealthNode("travel", 0.0));
+    addWealthChild(expenses, createWealthNode("regular", 0.0));
+    addWealthChild(expenses, createWealthNode("investment", 0.0)); // For tracking *cost*
+
+    // 3. Add the new user to the global heap
+    // *** BUG FIX: CRITICAL INTERCONNECTIVITY STEP ***
+    heapInsert(g_userHeap, user);
 
     printf("User '%s' registered successfully.\n", name);
-    return user;
+    // Function is void, no return
 }
 
 void printExpenseLog(ExpenditureNode* head) {
     //Annanya
-     if (!head) {
+    if (!head) {
         printf("No transactions found.\n");
         return;
     }
     printf("\n--- Transaction Log ---\n");
-    for (ExpenditureNode* temp = head; temp; temp = temp->next)
+    ExpenditureNode* temp = head;
+    while(temp != NULL) {
         printf("[%s] %s - %.2f\n", temp->category, temp->description, temp->amount);
+        temp = temp->next;
+    }
 }
 
 void freeExpenseList(ExpenditureNode* head) {
     //Annanya
     ExpenditureNode* temp;
-    while (head) {
+    while (head != NULL) {
         temp = head;
         head = head->next;
         free(temp);
@@ -529,4 +573,4 @@ void freeExpenseList(ExpenditureNode* head) {
     printf("Expense list cleared successfully.\n");
 }
 
-}
+// *** BUG FIX: Removed stray '}' that was here ***
