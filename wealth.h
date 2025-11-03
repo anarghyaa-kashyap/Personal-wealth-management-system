@@ -1,6 +1,5 @@
 #ifndef WEALTH_H
 #define WEALTH_H
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -67,18 +66,16 @@ typedef struct UserProfile {
     char name[50];
     char gender[10];
     double netWorth;
-
+    int heapIndex;  // OPTIMIZATION: Store position in heap for O(1) access
     WealthNode* wealthTreeRoot;
     ExpenditureNode* expenseListHead;
 } UserProfile;
-
 
 // ================================================================
 // --- (B) GLOBAL VARIABLE DECLARATION ---
 // ================================================================
 
 extern UserHeap* g_userHeap;
-
 
 // ================================================================
 // --- (C) FUNCTION PROTOTYPES (DECLARATIONS) ---
@@ -97,6 +94,7 @@ void heapifyDown(UserHeap* heap, int index);
 void heapInsert(UserHeap* heap, UserProfile* user);
 UserProfile* getTopWealthUser(UserHeap* heap);
 int findUserIndex(UserHeap* heap, UserProfile* user);
+void displayHeap(UserHeap* heap);
 
 // --- 3. Core Integration Functions ---
 double calculateNetWorth(WealthNode* root);
