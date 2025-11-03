@@ -3,6 +3,19 @@
 #include <stdlib.h> 
 #include <stdio.h>  
 
+// ================================================================
+// --- GLOBAL VARIABLE DEFINITION ---
+// ================================================================
+
+// *** FIX 1: Add the definition for the global heap ***
+// This is the actual variable that 'extern' in wealth.h was promising.
+UserHeap* g_userHeap = NULL;
+
+
+// ================================================================
+// --- (Ahana's Functions) ---
+// ================================================================
+
 WealthNode* createWealthNode(const char* name, double value) {
     //Ahana
     WealthNode* newNode = (WealthNode*)malloc(sizeof(WealthNode));
@@ -10,7 +23,9 @@ WealthNode* createWealthNode(const char* name, double value) {
         printf("ERROR: Memory allocation failed for WealthNode.\n");
         exit(1);
     }
-    strcpy(newNode->name, name);
+    // Use strncpy for safety
+    strncpy(newNode->name, name, 49);
+    newNode->name[49] = '\0';
     newNode->value = value;
     newNode->firstChild = NULL;
     newNode->nextSibling = NULL;
@@ -54,10 +69,10 @@ void printWealthTree(WealthNode* root, int indent) {
         return; 
     }
     for (int i = 0; i < indent; i++) {
-        printf(" ");
+        printf("  "); // Use 2 spaces for cleaner indent
     }
     printf("+- %s: ($%.2f)\n", root->name, root->value);
-    printWealthTree(root->firstChild, indent + 4);
+    printWealthTree(root->firstChild, indent + 2); // Use 2 spaces
     printWealthTree(root->nextSibling, indent);
 }
 
@@ -72,6 +87,9 @@ void freeWealthTree(WealthNode* root) {
     free(root);
 }
 
+// ================================================================
+// --- (Anarghyaa's Functions) ---
+// ================================================================
 
 /* Compare two users for MAX-heap order.
    Higher netWorth = higher priority.
@@ -177,6 +195,7 @@ void heapInsert(UserHeap* heap, UserProfile* user) {
     /* grow capacity if needed */
     if (heap->size >= heap->capacity) {
         int newCap = heap->capacity * 2;
+        if (newCap == 0) newCap = 10; // Handle initial capacity 0
         UserProfile** newArr =
             (UserProfile**)realloc(heap->userArray, sizeof(UserProfile*) * newCap);
         if (newArr == NULL) {
@@ -196,6 +215,10 @@ void heapInsert(UserHeap* heap, UserProfile* user) {
     heap->size++;
 }
 
+// ================================================================
+// --- (Akshata's Functions - CORRECTED) ---
+// ================================================================
+
 UserProfile* getTopWealthUser(UserHeap* heap) {
     // Error handling: Check if heap is NULL
     if (heap == NULL) {
@@ -211,7 +234,7 @@ UserProfile* getTopWealthUser(UserHeap* heap) {
     
     // Error handling: Check if heap is empty
     if (heap->size <= 0) {
-        fprintf(stderr, "Error [getTopWealthUser]: Heap is empty (size: %d)\n", heap->size);
+        // This is not an error, just an empty heap.
         return NULL;
     }
     
@@ -267,11 +290,39 @@ int findUserIndex(UserHeap* heap, UserProfile* user) {
     }
     
     // User not found in heap
-    fprintf(stderr, "Warning [findUserIndex]: User '%s' not found in heap\n", 
-            user->name);
+    // fprintf(stderr, "Warning [findUserIndex]: User '%s' not found in heap\n", 
+    //         user->name);
     return -1;
 }
 
+/**
+ * @brief *** FIX 2: ADD THIS NEW FUNCTION ***
+ * Displays all users in the heap (not in sorted order).
+ */
+void displayHeap(UserHeap* heap) {
+    if (heap == NULL || heap->size == 0) {
+        printf("\nNo users in the system to display.\n");
+        return;
+    }
+
+    printf("\n--- All Users ---\n");
+    for (int i = 0; i < heap->size; i++) {
+        if (heap->userArray[i] != NULL) {
+            printf("%d. Name: %s, Net Worth: $%.2f\n", 
+                   i + 1, 
+                   heap->userArray[i]->name, 
+                   heap->userArray[i]->netWorth);
+        }
+    }
+    // Note: To display in *sorted* order, you would need
+    // to copy the heap array and sort the copy.
+}
+
+
+/**
+ * @brief Helper function to recursively sum the values of all nodes in a sibling list
+ * and all their descendants (children, grandchildren, etc.).
+ */
 double sumAllDescendants(WealthNode* firstChild) {
     double total = 0.0;
     WealthNode* current = firstChild;
@@ -294,6 +345,10 @@ double sumAllDescendants(WealthNode* firstChild) {
     return total;
 }
 
+/**
+ * @brief Calculates the user's true net worth based on the wealth tree.
+ * (This is the CORRECTED, LOGICAL version)
+ */
 double calculateNetWorth(WealthNode* root) {
     if (root == NULL) {
         return 0.0;
@@ -303,11 +358,10 @@ double calculateNetWorth(WealthNode* root) {
     double totalLiabilities = 0.0;
 
     // 1. Find the main "Investments" branch
-    // We assume "findWealthNode" is implemented to find a node by name
     WealthNode* investmentsNode = findWealthNode(root, "Investments");
     
     if (investmentsNode != NULL) {
-        // Sum all children of "Investments" (stock, gold, etc.)
+        // Sum all *children* of "Investments" (stock, gold, etc.)
         totalAssets = sumAllDescendants(investmentsNode->firstChild);
     }
 
@@ -315,7 +369,7 @@ double calculateNetWorth(WealthNode* root) {
     WealthNode* expensesNode = findWealthNode(root, "Expenses");
     
     if (expensesNode != NULL) {
-        // Sum all children of "Expenses" (health, travel, etc.)
+        // Sum all *children* of "Expenses" (health, travel, etc.)
         totalLiabilities = sumAllDescendants(expensesNode->firstChild);
     }
 
@@ -341,7 +395,7 @@ void finalizeUserUpdates(UserProfile* user) {
         fprintf(stderr, "Warning [finalizeUserUpdates]: User '%s' has NULL wealth tree\n", 
                 user->name);
         user->netWorth = 0.0;
-        return;
+        // Do not return; we may still need to heapify
     }
     
     // Step 1: Recalculate net worth from wealth tree
@@ -409,13 +463,18 @@ void freeHeap(UserHeap* heap) {
         heap->userArray = NULL;
     }
     
-    // Reset heap metadata
-    heap->size = 0;
-    heap->capacity = 0;
-    
     // Free the heap struct itself
     free(heap);
+    
+    // Good practice: Set the global pointer to NULL after freeing
+    if (heap == g_userHeap) {
+        g_userHeap = NULL;
+    }
 }
+
+// ================================================================
+// --- (Annanya's Functions - CORRECTED) ---
+// ================================================================
 
 void logExpenseToList(UserProfile* user, const char* category, const char* desc, double amount, InvestmentType invType) {
     //Annanya
@@ -436,14 +495,14 @@ void logExpenseToList(UserProfile* user, const char* category, const char* desc,
     newNode->description[99] = '\0';
     
     newNode->amount = amount;
-    newNode->investmentType = invType; // <-- CORRECTED: invType was wrong
+    newNode->investmentType = invType; 
     newNode->date = time(NULL); // Add timestamp
     
     // *** BUG FIX: Use correct struct member name ***
     newNode->next = user->expenseListHead;
     user->expenseListHead = newNode;
 
-    printf("Transaction added: [%s] %s - %.2f\n", category, desc, amount);
+    //printf("Transaction added: [%s] %s - %.2f\n", category, desc, amount);
 }
 
 void updateInvestmentValue(UserProfile* user, const char* nodeName, double newValue) {
@@ -488,7 +547,7 @@ void updateExpenseCategoryTotal(UserProfile* user, const char* category, double 
     }
     
     node->value += amount;
-    printf("Added %.2f to '%s' (New Total: %.2f)\n", amount, category, node->value);
+    //printf("Added %.2f to '%s' (New Total: %.2f)\n", amount, category, node->value);
     
     // *** BUG FIX: CRITICAL INTERCONNECTIVITY STEP ***
     finalizeUserUpdates(user);
@@ -496,7 +555,7 @@ void updateExpenseCategoryTotal(UserProfile* user, const char* category, double 
 
 void registerNewUser(const char* name, const char* gender) {
     //Annanya
-    if (!name || !gender) {
+    if (!name || !gender || strlen(name) == 0) {
         printf("Invalid user details.\n");
         return; // Changed to void return
     }
@@ -531,7 +590,7 @@ void registerNewUser(const char* name, const char* gender) {
     // Add investment sub-nodes (based on enum)
     addWealthChild(investments, createWealthNode("gold", 0.0));
     addWealthChild(investments, createWealthNode("stock", 0.0));
-    addWealthChild(investments, createWealthNode("property", 0.0));
+    addWealthChild(investments, createWealthNode("real estate", 0.0));
     addWealthChild(investments, createWealthNode("others", 0.0));
 
     // Add expense sub-nodes (based on main.c)
@@ -557,7 +616,16 @@ void printExpenseLog(ExpenditureNode* head) {
     printf("\n--- Transaction Log ---\n");
     ExpenditureNode* temp = head;
     while(temp != NULL) {
-        printf("[%s] %s - %.2f\n", temp->category, temp->description, temp->amount);
+        // Format the time
+
+        // *** FIX: Use standard, universal ctime() ***
+        char* timeStr = ctime(&temp->date); 
+        
+        // Remove the newline character that ctime() always adds
+        timeStr[strcspn(timeStr, "\n")] = 0; 
+
+        printf("  [%s] %s - $%.2f (%s)\n", 
+               temp->category, temp->description, temp->amount, timeStr);
         temp = temp->next;
     }
 }
@@ -570,7 +638,5 @@ void freeExpenseList(ExpenditureNode* head) {
         head = head->next;
         free(temp);
     }
-    printf("Expense list cleared successfully.\n");
+    //printf("Expense list cleared successfully.\n"); // Keep cleanup quiet
 }
-
-// *** BUG FIX: Removed stray '}' that was here ***
