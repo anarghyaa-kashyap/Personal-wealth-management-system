@@ -363,12 +363,13 @@ int main() {
 
     printf("Welcome to the Personal Wealth Management System!\n");
 
-    while (choice != 4) {
+    while (choice != 5) {
         printf("\n--- Main Menu ---\n");
         printf("1. Register New User\n");
         printf("2. Login\n");
         printf("3. View Top Wealthiest User\n");
-        printf("4. Exit\n");
+        printf("4. Display All Users (Wealth Ranking)\n");
+        printf("5. Exit\n");
         choice = getIntInput("Enter your choice: ");
 
         switch (choice) {
@@ -394,6 +395,9 @@ int main() {
                 break;
             }
             case 4:
+                displayHeap(g_userHeap);
+                break;
+            case 5:
                 printf("Exiting program. Cleaning up memory...\n");
                 break;
             default:
