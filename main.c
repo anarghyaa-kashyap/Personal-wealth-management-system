@@ -368,7 +368,7 @@ int main() {
         printf("1. Register New User\n");
         printf("2. Login\n");
         printf("3. View Top Wealthiest User\n");
-        printf("4. Display All Users (Wealth Ranking)\n");
+        printf("4. Display All Users (unsorted heap)\n");
         printf("5. Exit\n");
         choice = getIntInput("Enter your choice: ");
 
