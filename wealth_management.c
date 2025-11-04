@@ -2,8 +2,17 @@
 #include <string.h> 
 #include <stdlib.h> 
 #include <stdio.h>  
+#include <ctype.h> // For strcicmp (if needed here, though it's in main)
+
+// ================================================================
+// --- GLOBAL VARIABLE DEFINITION ---
+// ================================================================
 
 UserHeap* g_userHeap = NULL;
+
+// ================================================================
+// --- (Ahana's Functions) ---
+// ================================================================
 
 WealthNode* createWealthNode(const char* name, double value) {
     WealthNode* newNode = (WealthNode*)malloc(sizeof(WealthNode));
@@ -14,6 +23,7 @@ WealthNode* createWealthNode(const char* name, double value) {
     strncpy(newNode->name, name, 49);
     newNode->name[49] = '\0';
     newNode->value = value;
+    // previousValue initialization removed
     newNode->firstChild = NULL;
     newNode->nextSibling = NULL;
     return newNode;
@@ -69,6 +79,10 @@ void freeWealthTree(WealthNode* root) {
     freeWealthTree(root->nextSibling);
     free(root);
 }
+
+// ================================================================
+// --- (Anarghyaa's Functions) ---
+// ================================================================
 
 static int userCompare(const UserProfile* a, const UserProfile* b) {
     if (a == NULL && b == NULL) return 0;
@@ -149,7 +163,7 @@ void heapifyDown(UserHeap* heap, int index) {
 
 void heapInsert(UserHeap* heap, UserProfile* user) {
     if (heap == NULL || heap->userArray == NULL || user == NULL) return;
-    if (heap->size >= heap->capacity) { //increasing size of heap
+    if (heap->size >= heap->capacity) { 
         int newCap = heap->capacity * 2;
         if (newCap == 0) newCap = 10;
         UserProfile** newArr =
@@ -166,6 +180,10 @@ void heapInsert(UserHeap* heap, UserProfile* user) {
     heapifyUp(heap, heap->size);
     heap->size++;
 }
+
+// ================================================================
+// --- (Akshata's Functions) ---
+// ================================================================
 
 UserProfile* getTopWealthUser(UserHeap* heap) {
     if (heap == NULL) {
@@ -233,60 +251,31 @@ void displayHeap(UserHeap* heap) {
 }
 
 
-/**
- * @brief *** NEW RECURSIVE FUNCTION ***
- * This function replaces `sumAllDescendants` and `calculateNetWorth`.
- * It performs a post-order traversal to sum values from the leaves
- * up to the root, *storing the intermediate totals in the tree nodes*
- * as it goes.
- * @param root The node to start the calculation from.
- * @return The calculated value of the node.
- */
 double recursiveUpdateAndGetWorth(WealthNode* root) {
     if (root == NULL) {
         return 0.0;
     }
 
-    // --- 1. Base Case: Leaf Node ---
-    // If it's a leaf (like "gold" or "health"), it has no children.
-    // Its value is just its own value. Return it.
     if (root->firstChild == NULL) {
         return root->value;
     }
 
-    // --- 2. Recursive Step: Parent Node ---
-    // This is a parent node (like "Investments" or "Ahana").
-    // We must calculate its total value from its children.
     double childrenSum = 0.0;
     WealthNode* child = root->firstChild;
     while (child != NULL) {
-        // Recurse on the child to update *its* value first, then add it.
         childrenSum += recursiveUpdateAndGetWorth(child);
         child = child->nextSibling;
     }
 
-    // --- 3. Update This Node's Value ---
-    // The `value` field of a parent node IS the sum of its children.
-    // We update the stale $0.00 value.
     root->value = childrenSum;
 
-    // --- 4. Return the Correct Value for Net Worth Calculation ---
-    
-    // If this is the "Expenses" node, we store the *positive* sum (e.g., 80000)
-    // but we return the *negative* sum to its parent (Ahana) for the
-    // final Net Worth calculation.
     if (strcmp(root->name, "Expenses") == 0) {
-        return -root->value; // Returns -80000
+        return -root->value;
     }
 
-    // For any other node ("Investments", "Ahana"), the value is just the sum.
-    return root->value; // Returns 30000 (for Investments) or -50000 (for Ahana)
+    return root->value;
 }
 
-/**
- * @brief *** UPDATED FUNCTION ***
- * Now calls the new recursive function.
- */
 void finalizeUserUpdates(UserProfile* user) {
     if (user == NULL) {
         fprintf(stderr, "Error [finalizeUserUpdates]: User is NULL\n");
@@ -304,15 +293,8 @@ void finalizeUserUpdates(UserProfile* user) {
     
     double oldNetWorth = user->netWorth;
 
-    // *** THIS IS THE FIX ***
-    // Call the new function starting at the user's root.
-    // This will:
-    // 1. Update all parent nodes (Investments, Expenses) in the tree.
-    // 2. Return the final net worth (Assets - Liabilities).
     user->netWorth = recursiveUpdateAndGetWorth(user->wealthTreeRoot);
     
-    // The root node's (Ahana's) value is now also updated, so
-    // printWealthTree will show the correct total.
     user->wealthTreeRoot->value = user->netWorth;
 
     int userIndex = findUserIndex(g_userHeap, user);
@@ -364,9 +346,6 @@ void freeHeap(UserHeap* heap) {
 // ================================================================
 // --- (Annanya's Functions) ---
 // ================================================================
-// (logExpenseToList, updateInvestmentValue, updateExpenseCategoryTotal, 
-//  registerNewUser, printExpenseLog, freeExpenseList...
-// ...are unchanged and assumed to be here)
 
 void logExpenseToList(UserProfile* user, const char* category, const char* desc, double amount, InvestmentType invType) {
      if (!user || !category || !desc || amount < 0) {
@@ -409,6 +388,7 @@ void updateInvestmentValue(UserProfile* user, const char* nodeName, double newVa
         return;
     }
     
+    // previousValue assignment removed
     node->value = newValue;
     printf("Updated '%s' to %.2f\n", nodeName, newValue);
 }
@@ -456,17 +436,20 @@ void registerNewUser(const char* name, const char* gender) {
 
     user->wealthTreeRoot = createWealthNode(name, 0.0); 
     
-    WealthNode* investments = createWealthNode("Investments", 0.0);
+    WealthNode* income = createWealthNode("Income", 0.0);
     WealthNode* expenses = createWealthNode("Expenses", 0.0);
+    WealthNode* investments = createWealthNode("Investments", 0.0);
     
-    addWealthChild(user->wealthTreeRoot, investments);
+    addWealthChild(user->wealthTreeRoot, income);
     addWealthChild(user->wealthTreeRoot, expenses);
+    addWealthChild(user->wealthTreeRoot, investments);
+
+    addWealthChild(income, createWealthNode("salary", 0.0));
 
     addWealthChild(investments, createWealthNode("gold", 0.0));
     addWealthChild(investments, createWealthNode("stock", 0.0));
     addWealthChild(investments, createWealthNode("real estate", 0.0));
     addWealthChild(investments, createWealthNode("others", 0.0));
-    addWealthChild(investments, createWealthNode("cash", 0.0));
 
     addWealthChild(expenses, createWealthNode("health", 0.0));
     addWealthChild(expenses, createWealthNode("travel", 0.0));
@@ -500,3 +483,5 @@ void freeExpenseList(ExpenditureNode* head) {
         free(temp);
     }
 }
+
+// The predictStock function has been entirely removed.

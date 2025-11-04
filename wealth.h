@@ -42,6 +42,7 @@ typedef struct ExpenditureNode {
 typedef struct WealthNode {
     char name[50];
     double value;
+    // previousValue was removed
     struct WealthNode* firstChild;
     struct WealthNode* nextSibling;
 } WealthNode;
@@ -67,7 +68,7 @@ typedef struct UserProfile {
     char name[50];
     char gender[10];
     double netWorth;
-    // Note: heapIndex was removed as it was not used in your .c file
+    
     WealthNode* wealthTreeRoot;
     ExpenditureNode* expenseListHead;
 } UserProfile;
@@ -97,11 +98,10 @@ void heapifyDown(UserHeap* heap, int index);
 void heapInsert(UserHeap* heap, UserProfile* user);
 UserProfile* getTopWealthUser(UserHeap* heap);
 int findUserIndex(UserHeap* heap, UserProfile* user);
-// *** FIX: Added missing prototype for displayHeap ***
 void displayHeap(UserHeap* heap); 
 
 // --- 3. Core Integration Functions ---
-double calculateNetWorth(WealthNode* root);
+double recursiveUpdateAndGetWorth(WealthNode* root); // <-- This is the new func name
 
 void logExpenseToList(UserProfile* user, const char* category, const char* desc, 
                       double amount, InvestmentType invType);
@@ -113,6 +113,8 @@ void updateExpenseCategoryTotal(UserProfile* user, const char* category, double 
 void finalizeUserUpdates(UserProfile* user);
 
 void registerNewUser(const char* name, const char* gender);
+
+// predictStock prototype was removed
 
 // --- 4. Print & Cleanup Functions ---
 void printExpenseLog(ExpenditureNode* head);
