@@ -146,7 +146,7 @@ void handleAddExpense(UserProfile* user) {
     // STEP 3: Recalculate net worth and fix heap position
     finalizeUserUpdates(user);
 
-    printf("Transaction logged successfully. New net worth: $%.2f\n", user->netWorth);
+    printf("Transaction logged successfully. New net worth: ₹%.2f\n", user->netWorth);
 }
 
 /**
@@ -179,7 +179,7 @@ void handleUpdateInvestment(UserProfile* user) {
         return;
     }
 
-    printf("Current value: $%.2f\n", node->value);
+    printf("Current value: ₹%.2f\n", node->value);
     value = getDoubleInput("Enter new total value: ");
 
     if (value < 0) {
@@ -191,7 +191,7 @@ void handleUpdateInvestment(UserProfile* user) {
     finalizeUserUpdates(user);
 
     printf("Investment market value updated successfully!\n");
-    printf("New net worth: $%.2f\n", user->netWorth);
+    printf("New net worth: ₹%.2f\n", user->netWorth);
 }
 
 /**
@@ -214,10 +214,10 @@ void handleViewInvestmentPortfolio(UserProfile* user) {
     }
 
     printf("\n--- %s's Investment Portfolio (by Total Cost) ---\n", user->name);
-    printf("  Property:    $%.2f\n", portfolioTotals[INV_PROPERTY]);
-    printf("  Stocks:      $%.2f\n", portfolioTotals[INV_STOCKS]);
-    printf("  Gold:        $%.2f\n", portfolioTotals[INV_GOLD]);
-    printf("  Others:      $%.2f\n", portfolioTotals[INV_OTHERS]);
+    printf("  Property:    ₹%.2f\n", portfolioTotals[INV_PROPERTY]);
+    printf("  Stocks:      ₹%.2f\n", portfolioTotals[INV_STOCKS]);
+    printf("  Gold:        ₹%.2f\n", portfolioTotals[INV_GOLD]);
+    printf("  Others:      ₹%.2f\n", portfolioTotals[INV_OTHERS]);
     printf("--------------------------------------------------\n");
 
     double totalInvested = portfolioTotals[INV_PROPERTY] +
@@ -225,7 +225,7 @@ void handleViewInvestmentPortfolio(UserProfile* user) {
                            portfolioTotals[INV_GOLD] +
                            portfolioTotals[INV_OTHERS];
 
-    printf("  Total Invested (Cost): $%.2f\n", totalInvested);
+    printf("  Total Invested (Cost): ₹%.2f\n", totalInvested);
 }
 
 /**
@@ -306,7 +306,7 @@ void loggedInMenu(UserProfile* user) {
 
     int choice = 0;
     while (choice != 7) {
-        printf("\n--- Welcome, %s (Net Worth: $%.2f) ---\n", user->name, user->netWorth);
+        printf("\n--- Welcome, %s (Net Worth: ₹%.2f) ---\n", user->name, user->netWorth);
         printf("1. Add Transaction (Expense or Investment Purchase)\n");
         printf("2. Update Investment Market Value\n");
         printf("3. View My Transaction Log\n");
@@ -332,7 +332,7 @@ void loggedInMenu(UserProfile* user) {
                 printWealthTree(user->wealthTreeRoot, 0);
                 break;
             case 5:
-                printf("\nYour current calculated net worth is: $%.2f\n", user->netWorth);
+                printf("\nYour current calculated net worth is: ₹%.2f\n", user->netWorth);
                 break;
             case 6:
                 handleViewInvestmentPortfolio(user);
@@ -390,7 +390,7 @@ int main() {
                 } else {
                     printf("\n--- Top Wealthiest User ---\n");
                     printf("Name:      %s\n", topUser->name);
-                    printf("Net Worth: $%.2f\n", topUser->netWorth);
+                    printf("Net Worth: ₹%.2f\n", topUser->netWorth);
                 }
                 break;
             }
