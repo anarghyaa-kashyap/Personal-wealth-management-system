@@ -42,6 +42,7 @@ typedef struct ExpenditureNode {
 typedef struct WealthNode {
     char name[50];
     double value;
+    // previousValue was removed
     struct WealthNode* firstChild;
     struct WealthNode* nextSibling;
 } WealthNode;
@@ -54,7 +55,7 @@ struct UserProfile;
  * @brief Represents the Max-Heap (Priority Queue) - Non-Linear Data Structure.
  */
 typedef struct UserHeap {
-    struct UserProfile** userArray;
+    struct UserProfile** userArray; //heap implemented using array
     int size;
     int capacity;
 } UserHeap;
@@ -67,7 +68,7 @@ typedef struct UserProfile {
     char name[50];
     char gender[10];
     double netWorth;
-
+    
     WealthNode* wealthTreeRoot;
     ExpenditureNode* expenseListHead;
 } UserProfile;
@@ -97,36 +98,23 @@ void heapifyDown(UserHeap* heap, int index);
 void heapInsert(UserHeap* heap, UserProfile* user);
 UserProfile* getTopWealthUser(UserHeap* heap);
 int findUserIndex(UserHeap* heap, UserProfile* user);
+void displayHeap(UserHeap* heap); 
 
 // --- 3. Core Integration Functions ---
-double calculateNetWorth(WealthNode* root);
+double recursiveUpdateAndGetWorth(WealthNode* root); // <-- This is the new func name
 
-/**
- * @brief SIMPLIFIED: Only logs the expense to the linear list.
- * Does NOT update tree or heap. Use for clean separation of concerns.
- */
 void logExpenseToList(UserProfile* user, const char* category, const char* desc, 
                       double amount, InvestmentType invType);
 
-/**
- * @brief Updates a specific investment node's value in the tree.
- * Also recalculates net worth and fixes heap position.
- */
 void updateInvestmentValue(UserProfile* user, const char* nodeName, double newValue);
 
-/**
- * @brief Updates a non-investment category total (e.g., health, travel).
- * Adds the amount to the existing category value.
- */
 void updateExpenseCategoryTotal(UserProfile* user, const char* category, double amount);
 
-/**
- * @brief Recalculates user's net worth and fixes their heap position.
- * Call this after any tree modifications.
- */
 void finalizeUserUpdates(UserProfile* user);
 
 void registerNewUser(const char* name, const char* gender);
+
+// predictStock prototype was removed
 
 // --- 4. Print & Cleanup Functions ---
 void printExpenseLog(ExpenditureNode* head);
@@ -134,5 +122,6 @@ void printWealthTree(WealthNode* root, int indent);
 void freeExpenseList(ExpenditureNode* head);
 void freeWealthTree(WealthNode* root);
 void freeHeap(UserHeap* heap);
+
 
 #endif // WEALTH_H
