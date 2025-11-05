@@ -4,10 +4,6 @@
 #include <ctype.h> 
 #include "wealth.h"
 
-// ================================================================
-// --- (A) HELPER FUNCTIONS FOR USER INPUT ---
-// ================================================================
-
 void getStringInput(const char* prompt, char* buffer, int size) {
     printf("%s", prompt);
     if (fgets(buffer, size, stdin) == NULL) {
@@ -43,7 +39,8 @@ double getDoubleInput(const char* prompt) {
     }
 }
 
-int strcicmp(const char* s1, const char* s2) {
+//case insensitive string comparison
+int strcicmp(const char* s1, const char* s2) { 
     while (*s1 && *s2) {
         if (toupper((unsigned char)*s1) != toupper((unsigned char)*s2)) {
             return *s1 - *s2;
@@ -54,6 +51,7 @@ int strcicmp(const char* s1, const char* s2) {
     return *s1 - *s2;
 }
 
+//maps InvestmentType enum to its cahr name in the wealth tree
 const char* getInvestmentNodeName(InvestmentType type) {
     switch (type) {
         case INV_PROPERTY: return "real estate";
@@ -64,11 +62,7 @@ const char* getInvestmentNodeName(InvestmentType type) {
     }
 }
 
-
-// ================================================================
-// --- (B) SUB-MENU HANDLER FUNCTIONS ---
-// ================================================================
-
+//adding new transactions to the tree for a particular user
 void handleAddTransaction(UserProfile* user) {
     if (user == NULL) {
         printf("Error: Invalid user profile.\n");
@@ -94,7 +88,8 @@ void handleAddTransaction(UserProfile* user) {
             printf("Invalid category choice.\n");
             return;
     }
-    if (strcmp(category, "investment") == 0) {
+    //if its an investment show the sub-menu
+    if (strcmp(category, "investment") == 0) { 
         printf("\nSelect investment type:\n");
         printf("  1. Property\n");
         printf("  2. Stocks\n");
@@ -102,7 +97,7 @@ void handleAddTransaction(UserProfile* user) {
         printf("  4. Others\n");
         int choice = getIntInput("Enter type (1-4): ");
         switch (choice) {
-            case 1: invType = INV_PROPERTY; break;
+            case 1: invType = INV_PROPERTY; break; //enum values
             case 2: invType = INV_STOCKS;   break;
             case 3: invType = INV_GOLD;     break;
             case 4: invType = INV_OTHERS;   break;
@@ -125,26 +120,27 @@ void handleAddTransaction(UserProfile* user) {
         printf("Error: Amount must be positive.\n");
         return;
     }
-    logExpenseToList(user, category, description, amount, invType);
+    logExpenseToList(user, category, description, amount, invType); //adds expense to the list of expenses
     if (strcmp(category, "investment") == 0) {
-        const char* assetName = getInvestmentNodeName(invType);
+        const char* assetName = getInvestmentNodeName(invType); //maps the enum value to the correct tree node name
         if (assetName != NULL) {
-            WealthNode* node = findWealthNode(user->wealthTreeRoot, assetName);
+            WealthNode* node = findWealthNode(user->wealthTreeRoot, assetName); //finds the specific node in the users tree
             if (node != NULL) {
                 double newValue = node->value + amount;
-                updateInvestmentValue(user, assetName, newValue);
+                updateInvestmentValue(user, assetName, newValue); //updates investment total value
                 printf("Investment purchase recorded. Asset '%s' updated.\n", assetName);
             } else {
                 printf("Warning: Asset node '%s' not found in wealth tree.\n", assetName);
             }
         }
     } else {
-        updateExpenseCategoryTotal(user, category, amount);
+        updateExpenseCategoryTotal(user, category, amount); //updates expense category total
     }
-    finalizeUserUpdates(user);
+    finalizeUserUpdates(user); //calculates user's networth and updates their position in the heap
     printf("Transaction logged successfully. New net worth: $%.2f\n", user->netWorth);
 }
 
+//adding source of income like salary etc.
 void handleAddIncome(UserProfile* user) {
     if (user == NULL) {
         printf("Error: Invalid user profile.\n");
@@ -158,7 +154,7 @@ void handleAddIncome(UserProfile* user) {
         return;
     }
 
-    WealthNode* salaryNode = findWealthNode(user->wealthTreeRoot, "salary");
+    WealthNode* salaryNode = findWealthNode(user->wealthTreeRoot, "salary"); //finda salary node in the users tree
     if (salaryNode == NULL) {
         printf("Error: 'salary' asset node not found. Cannot add income.\n");
         return;
@@ -166,12 +162,13 @@ void handleAddIncome(UserProfile* user) {
     
     double newValue = salaryNode->value + amount;
     
-    updateInvestmentValue(user, "salary", newValue);
-    finalizeUserUpdates(user);
+    updateInvestmentValue(user, "salary", newValue); 
+    finalizeUserUpdates(user); //updates users networth and heap position
     
     printf("Income added successfully. New net worth: $%.2f\n", user->netWorth);
 }
 
+//to change current market value of an asset
 void handleUpdateInvestment(UserProfile* user) {
     if (user == NULL) {
         printf("Error: Invalid user profile.\n");
@@ -194,11 +191,12 @@ void handleUpdateInvestment(UserProfile* user) {
     WealthNode* invRoot = findWealthNode(user->wealthTreeRoot, "Investments");
     WealthNode* node = NULL;
     
+    //find the node under the investments branch - case insensitive 
     if (invRoot) {
         WealthNode* child = invRoot->firstChild;
         while(child) {
             if (strcicmp(child->name, nodeName) == 0) {
-                node = child; 
+                node = child; //found the match
                 break;
             }
             child = child->nextSibling;
@@ -218,21 +216,23 @@ void handleUpdateInvestment(UserProfile* user) {
         return;
     }
 
-    updateInvestmentValue(user, node->name, value);
+    updateInvestmentValue(user, node->name, value); //updates the nodes value
     finalizeUserUpdates(user);
 
     printf("Investment market value updated successfully!\n");
     printf("New net worth: $%.2f\n", user->netWorth);
 }
 
+//shows the total cost of investments 
 void handleViewInvestmentPortfolio(UserProfile* user) {
     if (user == NULL) {
         printf("Error: Invalid user profile.\n");
         return;
     }
 
-    double portfolioTotals[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
+    double portfolioTotals[5] = {0.0, 0.0, 0.0, 0.0, 0.0}; //temporary array to hold sums
 
+    //iterates through the transaction list to find the sum of costs
     ExpenditureNode* current = user->expenseListHead;
     while (current != NULL) {
         if (current->investmentType != INV_NONE && current->investmentType < 5) {
@@ -268,12 +268,12 @@ void handleRegister() {
         return;
     }
 
-    if (strcicmp(name, "admin") == 0) {
+    if (strcicmp(name, "admin") == 0) { //doesnt let someone register as admin
          printf("Error: 'admin' is a reserved name.\n");
          return;
     }
 
-    if (g_userHeap != NULL) {
+    if (g_userHeap != NULL) { //checking for the user - case insensitive
         for (int i = 0; i < g_userHeap->size; i++) {
             if (strcicmp(g_userHeap->userArray[i]->name, name) == 0) {
                 printf("Error: A user with that name (or similar case) already exists.\n");
@@ -308,6 +308,7 @@ UserProfile* handleLogin() {
         return NULL;
     }
     
+    //if the user is the admin
     if (strcicmp(name, "admin") == 0) {
         printf("Admin login successful. Welcome.\n");
         static UserProfile adminUser; 
@@ -316,6 +317,7 @@ UserProfile* handleLogin() {
         return &adminUser;
     }
 
+    //searching for a normal user
     for (int i = 0; i < g_userHeap->size; i++) {
         if (g_userHeap->userArray[i] != NULL &&
             strcicmp(g_userHeap->userArray[i]->name, name) == 0) {
@@ -328,10 +330,7 @@ UserProfile* handleLogin() {
     return NULL;
 }
 
-// ================================================================
-// --- (C) THE LOGGED-IN USER MENUS ---
-// ================================================================
-
+//admin only menu
 void adminMenu() {
     int choice = 0;
     while (choice != 3) {
@@ -354,7 +353,7 @@ void adminMenu() {
                 break;
             }
             case 2:
-                displayHeap(g_userHeap);
+                displayHeap(g_userHeap); //can see all the users in order of wealth 
                 break;
             case 3:
                 printf("Logging out admin...\n");
@@ -414,15 +413,10 @@ void loggedInMenu(UserProfile* user) {
     }
 }
 
-
-// ================================================================
-// --- (D) THE MAIN APPLICATION LOOP ---
-// ================================================================
-
 int main() {
     int choice = 0;
 
-    g_userHeap = createHeap(100);
+    g_userHeap = createHeap(100); //initializing the global heap
     if (g_userHeap == NULL) {
         printf("Error: Failed to initialize the system.\n");
         return 1;
