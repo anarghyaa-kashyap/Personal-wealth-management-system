@@ -61,7 +61,7 @@ void printWealthTree(WealthNode* root, int indent) {//takes indent as param for 
     for (int i = 0; i < indent; i++) {
         printf("  ");
     }
-    printf("+- %s: (₹%.2f)\n", root->name, root->value);
+    printf("+- %s: (Rs.%.2f)\n", root->name, root->value);
     //traverses through (and prints) all children of a node first
     printWealthTree(root->firstChild, indent + 2);//increases indent/spacing by 2 for each child lvl
     //then recursively moves to all siblings of the current node
@@ -267,7 +267,7 @@ void displayHeap(UserHeap* heap) {
     printf("\n--- All Users ---\n");
     for (int i = 0; i < heap->size; i++) {
         if (heap->userArray[i] != NULL) {
-            printf("%d. Name: %s, Net Worth: ₹%.2f\n", 
+            printf("%d. Name: %s, Net Worth: Rs.%.2f\n", 
                    i + 1, 
                    heap->userArray[i]->name, 
                    heap->userArray[i]->netWorth);
@@ -510,7 +510,7 @@ void printExpenseLog(ExpenditureNode* head) {
         //remove trailing newline
         timeStr[strcspn(timeStr, "\n")] = 0; 
 
-        printf("  [%s] %s - ₹%.2f (%s)\n", 
+        printf("  [%s] %s - Rs.%.2f (%s)\n", 
                temp->category, temp->description, temp->amount, timeStr);
         temp = temp->next;
     }
