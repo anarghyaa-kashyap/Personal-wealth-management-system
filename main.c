@@ -107,9 +107,6 @@ void handleAddTransaction(UserProfile* user) {
                 break;
         }
         getStringInput("Enter description: ", description, 100);
-    } else {
-        getStringInput("Enter description: ", description, 100);
-        invType = INV_NONE;
     }
     if (strlen(description) == 0) {
         printf("Error: Description cannot be empty.\n");
@@ -154,7 +151,7 @@ void handleAddIncome(UserProfile* user) {
         return;
     }
 
-    WealthNode* salaryNode = findWealthNode(user->wealthTreeRoot, "salary"); //finda salary node in the users tree
+    WealthNode* salaryNode = findWealthNode(user->wealthTreeRoot, "salary"); //finds salary node in the users tree
     if (salaryNode == NULL) {
         printf("Error: 'salary' asset node not found. Cannot add income.\n");
         return;
