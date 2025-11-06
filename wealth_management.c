@@ -209,20 +209,15 @@ void heapInsert(UserHeap* heap, UserProfile* user) {
 
 //return pointer to richest user(top). Null if empty
 UserProfile* getTopWealthUser(UserHeap* heap) {
-    if (heap == NULL) {
-        fprintf(stderr, "Error [getTopWealthUser]: Heap is NULL\n");
+    if (heap == NULL || heap->userArray == NULL || heap->size <= 0) {
         return NULL;
     }
-    if (heap->userArray == NULL) {
-        fprintf(stderr, "Error [getTopWealthUser]: Heap's user array is NULL\n");
-        return NULL;
-    }
-    if (heap->size <= 0) {
-        return NULL;
-    }
+
     UserProfile* topUser = heap->userArray[0];
+
+    // If size > 0, index 0 should NEVER be NULL. This indicates heap corruption.
     if (topUser == NULL) {
-        fprintf(stderr, "Error [getTopWealthUser]: Top user at index 0 is NULL\n");
+        fprintf(stderr, "Error in getTopWealthUser: Heap corrupted. Top user at index 0 is NULL\n");
         return NULL;
     }
     return topUser;
@@ -230,32 +225,23 @@ UserProfile* getTopWealthUser(UserHeap* heap) {
 
 //find the index of a given user pointer 
 int findUserIndex(UserHeap* heap, UserProfile* user) {
-    if (heap == NULL) {
-        fprintf(stderr, "Error [findUserIndex]: Heap is NULL\n");
+    if (heap == NULL || user == NULL || heap->userArray == NULL) {
         return -1;
     }
-    if (user == NULL) {
-        fprintf(stderr, "Error [findUserIndex]: User is NULL\n");
+
+    //heap size should never be negative, indicates larger error
+    if (heap->size < 0){
+        fprintf(stderr, "Error in findUserIndex: Invalid heap size: %d\n", heap->size);
         return -1;
     }
-    if (heap->userArray == NULL) {
-        fprintf(stderr, "Error [findUserIndex]: Heap's user array is NULL\n");
-        return -1;
-    }
-    if (heap->size < 0) {
-        fprintf(stderr, "Error [findUserIndex]: Invalid heap size: %d\n", heap->size);
-        return -1;
-    }
+
+    //traverses through heap
     for (int i = 0; i < heap->size; i++) {
-        if (heap->userArray[i] == NULL) {
-            fprintf(stderr, "Warning [findUserIndex]: NULL user at index %d\n", i);
-            continue;
-        }
         if (heap->userArray[i] == user) {
             return i;
         }
     }
-    return -1;
+    return -1; //not found
 }
 
 //prints all the heap entries(in array order)
@@ -264,13 +250,10 @@ void displayHeap(UserHeap* heap) {
         printf("\nNo users in the system to display.\n");
         return;
     }
-    printf("\n--- All Users ---\n");
+    printf("\n----- ALL USERS -----\n");
     for (int i = 0; i < heap->size; i++) {
         if (heap->userArray[i] != NULL) {
-            printf("%d. Name: %s, Net Worth: Rs.%.2f\n", 
-                   i + 1, 
-                   heap->userArray[i]->name, 
-                   heap->userArray[i]->netWorth);
+            printf("%d. Name: %s, Net Worth: Rs.%.2f\n", i + 1, heap->userArray[i]->name, heap->userArray[i]->netWorth);
         }
     }
 }
@@ -280,55 +263,42 @@ double recursiveUpdateAndGetWorth(WealthNode* root) {
     if (root == NULL) {
         return 0.0;
     }
-
     if (root->firstChild == NULL) {
         return root->value;
     }
-
     double childrenSum = 0.0;
     WealthNode* child = root->firstChild;
     while (child != NULL) {
         childrenSum += recursiveUpdateAndGetWorth(child);
         child = child->nextSibling;
     }
-
     root->value = childrenSum;
-
     if (strcmp(root->name, "Expenses") == 0) {
         return -root->value;
     }
-
     return root->value;
 }
 
 //recalculate user's networth and fix their heap position
 void finalizeUserUpdates(UserProfile* user) {
-    if (user == NULL) {
-        fprintf(stderr, "Error [finalizeUserUpdates]: User is NULL\n");
+    if (user == NULL || g_userHeap == NULL) {
         return;
-    }
-    if (g_userHeap == NULL) {
-        fprintf(stderr, "Error [finalizeUserUpdates]: Global heap is NULL\n");
-        return;
-    }
-    if (user->wealthTreeRoot == NULL) {
-        fprintf(stderr, "Warning [finalizeUserUpdates]: User '%s' has NULL wealth tree\n", 
-                user->name);
-        user->netWorth = 0.0;
     }
     
-    //keep old to decide move direction
+    if (user->wealthTreeRoot == NULL) {
+        user->netWorth = 0.0;
+    }
+
     double oldNetWorth = user->netWorth;
 
-    //recompute from tree and set root value
-    user->netWorth = recursiveUpdateAndGetWorth(user->wealthTreeRoot);
-    user->wealthTreeRoot->value = user->netWorth;
+    if (user->wealthTreeRoot != NULL) {
+        user->netWorth = recursiveUpdateAndGetWorth(user->wealthTreeRoot);
+        user->wealthTreeRoot->value = user->netWorth;
+    }
 
-    //find where the user is in the heap array
     int userIndex = findUserIndex(g_userHeap, user);
     if (userIndex == -1) {
-        fprintf(stderr, "Error [finalizeUserUpdates]: User '%s' not found in heap\n", 
-                user->name);
+        fprintf(stderr, "Error [finalizeUserUpdates]: User '%s' not found in heap. Cannot update position.\n", user->name);
         return;
     }
 
@@ -343,15 +313,13 @@ void finalizeUserUpdates(UserProfile* user) {
 //free all users inside heap, then free heap memory
 void freeHeap(UserHeap* heap) {
     if (heap == NULL) {
-        fprintf(stderr, "Warning [freeHeap]: Heap is NULL, nothing to free\n");
         return;
     }
     if (heap->userArray != NULL) {
         for (int i = 0; i < heap->size; i++) {
             UserProfile* user = heap->userArray[i];
             if (user == NULL) {
-                fprintf(stderr, "Warning [freeHeap]: NULL user at index %d\n", i);
-                continue;
+                continue; // Silently skip
             }
             if (user->wealthTreeRoot != NULL) {
                 freeWealthTree(user->wealthTreeRoot);
