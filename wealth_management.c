@@ -367,28 +367,49 @@ void logExpenseToList(UserProfile* user, const char* category, const char* desc,
     user->expenseListHead = newNode;
 }
 
-//update the value of the given investment node
+/**
+ * @brief Updates a specific investment node's value in the tree.
+ * If the node does not exist, it creates it under "Investments".
+ * Also recalculates net worth and fixes heap position.
+ */
 void updateInvestmentValue(UserProfile* user, const char* nodeName, double newValue) {
-     if (!user || !user->wealthTreeRoot || !nodeName) { 
+    if (!user || !user->wealthTreeRoot || !nodeName) {
         printf("Invalid input to updateInvestmentValue.\n");
-        return;
-    }
-    
-    //find the node by name
-    WealthNode* node = findWealthNode(user->wealthTreeRoot, nodeName);
-    
-    if (!node) {
-        printf("Category '%s' not found.\n", nodeName);
         return;
     }
     if (newValue < 0) {
         printf("Negative value not allowed.\n");
         return;
     }
+
+    WealthNode* node = findWealthNode(user->wealthTreeRoot, nodeName);
     
-    // previousValue assignment removed
-    node->value = newValue;
-    printf("Updated '%s' to %.2f\n", nodeName, newValue);
+    if (!node) {
+        printf("Warning: Node '%s' not found. Creating it...\n", nodeName);
+        
+        // 1. Find the main "Investments" parent node
+        WealthNode* investments = findWealthNode(user->wealthTreeRoot, "Investments");
+        if (investments == NULL) {
+            printf("Error: Critical - 'Investments' branch not found. Cannot add node.\n");
+            return;
+        }
+
+        // 2. Create the new node
+        WealthNode* newNode = createWealthNode(nodeName, newValue);
+        
+        // 3. Add it to the "Investments" branch
+        addWealthChild(investments, newNode);
+        printf("Created new asset '%s' with value %.2f\n", nodeName, newValue);
+        
+
+    } else {
+        // --- This was the original logic ---
+        node->value = newValue;
+        printf("Updated '%s' to %.2f\n", nodeName, newValue);
+    }
+    
+    // Finalize the heap and net worth in either case
+    finalizeUserUpdates(user);
 }
 
 //add amount to a given expense category
@@ -399,8 +420,8 @@ void updateExpenseCategoryTotal(UserProfile* user, const char* category, double 
     }
     
     //go to the expenses branch
-    WealthNode* expensesRoot = findWealthNode(user->wealthTreeRoot, "Expenses");
-    if (!expensesRoot) {
+    WealthNode* expensesRoot = findWealthNode(user->wealthTreeRoot, "Expenses"); //no expense has been made yet
+    if (!expensesRoot) { //expense of that category hasn't been made yet
         printf("Error: 'Expenses' category not found in tree.\n");
         return;
     }
@@ -437,7 +458,7 @@ void registerNewUser(const char* name, const char* gender) {
     user->netWorth = 0.0;
     user->expenseListHead = NULL;
 
-    //build root and main branches
+    //build root and main branches of user's wealth tree
     user->wealthTreeRoot = createWealthNode(name, 0.0); 
     
     WealthNode* income = createWealthNode("Income", 0.0);

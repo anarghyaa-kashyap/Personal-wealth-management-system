@@ -106,8 +106,9 @@ void handleAddTransaction(UserProfile* user) {
                 invType = INV_OTHERS; 
                 break;
         }
-        getStringInput("Enter description: ", description, 100);
     }
+    getStringInput("Enter description: ", description, 100);
+    
     if (strlen(description) == 0) {
         printf("Error: Description cannot be empty.\n");
         return;
