@@ -106,11 +106,9 @@ void handleAddTransaction(UserProfile* user) {
                 invType = INV_OTHERS; 
                 break;
         }
-        getStringInput("Enter description: ", description, 100);
-    } else {
-        getStringInput("Enter description: ", description, 100);
-        invType = INV_NONE;
     }
+    getStringInput("Enter description: ", description, 100);
+    
     if (strlen(description) == 0) {
         printf("Error: Description cannot be empty.\n");
         return;
@@ -137,7 +135,7 @@ void handleAddTransaction(UserProfile* user) {
         updateExpenseCategoryTotal(user, category, amount); //updates expense category total
     }
     finalizeUserUpdates(user); //calculates user's networth and updates their position in the heap
-    printf("Transaction logged successfully. New net worth: $%.2f\n", user->netWorth);
+    printf("Transaction logged successfully. New net worth: Rs.%.2f\n", user->netWorth);
 }
 
 //adding source of income like salary etc.
@@ -154,7 +152,7 @@ void handleAddIncome(UserProfile* user) {
         return;
     }
 
-    WealthNode* salaryNode = findWealthNode(user->wealthTreeRoot, "salary"); //finda salary node in the users tree
+    WealthNode* salaryNode = findWealthNode(user->wealthTreeRoot, "salary"); //finds salary node in the users tree
     if (salaryNode == NULL) {
         printf("Error: 'salary' asset node not found. Cannot add income.\n");
         return;
@@ -165,7 +163,7 @@ void handleAddIncome(UserProfile* user) {
     updateInvestmentValue(user, "salary", newValue); 
     finalizeUserUpdates(user); //updates users networth and heap position
     
-    printf("Income added successfully. New net worth: $%.2f\n", user->netWorth);
+    printf("Income added successfully. New net worth: Rs.%.2f\n", user->netWorth);
 }
 
 //to change current market value of an asset
@@ -208,7 +206,7 @@ void handleUpdateInvestment(UserProfile* user) {
         return;
     }
 
-    printf("Current value: $%.2f\n", node->value);
+    printf("Current value: Rs.%.2f\n", node->value);
     value = getDoubleInput("Enter new total value: ");
 
     if (value < 0) {
@@ -220,7 +218,7 @@ void handleUpdateInvestment(UserProfile* user) {
     finalizeUserUpdates(user);
 
     printf("Investment market value updated successfully!\n");
-    printf("New net worth: $%.2f\n", user->netWorth);
+    printf("New net worth: Rs.%.2f\n", user->netWorth);
 }
 
 //shows the total cost of investments 
@@ -242,10 +240,10 @@ void handleViewInvestmentPortfolio(UserProfile* user) {
     }
 
     printf("\n--- %s's Investment Portfolio (by Total Cost) ---\n", user->name);
-    printf("  Property:    $%.2f\n", portfolioTotals[INV_PROPERTY]);
-    printf("  Stocks:      $%.2f\n", portfolioTotals[INV_STOCKS]);
-    printf("  Gold:        $%.2f\n", portfolioTotals[INV_GOLD]);
-    printf("  Others:      $%.2f\n", portfolioTotals[INV_OTHERS]);
+    printf("  Property:    Rs.%.2f\n", portfolioTotals[INV_PROPERTY]);
+    printf("  Stocks:      Rs.%.2f\n", portfolioTotals[INV_STOCKS]);
+    printf("  Gold:        Rs.%.2f\n", portfolioTotals[INV_GOLD]);
+    printf("  Others:      Rs.%.2f\n", portfolioTotals[INV_OTHERS]);
     printf("--------------------------------------------------\n");
 
     double totalInvested = portfolioTotals[INV_PROPERTY] +
@@ -253,7 +251,7 @@ void handleViewInvestmentPortfolio(UserProfile* user) {
                            portfolioTotals[INV_GOLD] +
                            portfolioTotals[INV_OTHERS];
 
-    printf("  Total Invested (Cost): $%.2f\n", totalInvested);
+    printf("  Total Invested (Cost): Rs.%.2f\n", totalInvested);
 }
 
 void handleRegister() {
@@ -372,8 +370,8 @@ void loggedInMenu(UserProfile* user) {
     }
 
     int choice = 0;
-    while (choice != 7) { // <-- Logout is now 7
-        printf("\n--- Welcome, %s (Net Worth: $%.2f) ---\n", user->name, user->netWorth);
+    while (choice != 7) {
+        printf("\n--- Welcome, %s (Net Worth: Rs.%.2f) ---\n", user->name, user->netWorth);
         printf("1. Add Transaction (Expense or Investment Purchase)\n");
         printf("2. Add Income (Salary, etc.)\n"); 
         printf("3. Update Investment Market Value\n");

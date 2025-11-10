@@ -6,14 +6,6 @@
 #include <string.h>
 #include <time.h>
 
-// ================================================================
-// --- (A) STRUCT DEFINITIONS ---
-// ================================================================
-
-/**
- * @enum InvestmentType
- * @brief Enumeration for specific investment categories.
- */
 typedef enum InvestmentType {
     INV_NONE,
     INV_PROPERTY,
@@ -22,10 +14,7 @@ typedef enum InvestmentType {
     INV_OTHERS
 } InvestmentType;
 
-/**
- * @struct ExpenditureNode
- * @brief Represents a single expense transaction (Linear Data Structure).
- */
+ //brief Represents a single expense transaction (Linear Data Structure).
 typedef struct ExpenditureNode {
     char category[50];
     char description[100];
@@ -35,14 +24,11 @@ typedef struct ExpenditureNode {
     struct ExpenditureNode* next;
 } ExpenditureNode;
 
-/**
- * @struct WealthNode
- * @brief Represents a single node in the wealth tree (Non-Linear Data Structure).
- */
+ //brief Represents a single node in the wealth tree (Non-Linear Data Structure).
+ 
 typedef struct WealthNode {
     char name[50];
     double value;
-    // previousValue was removed
     struct WealthNode* firstChild;
     struct WealthNode* nextSibling;
 } WealthNode;
@@ -50,20 +36,16 @@ typedef struct WealthNode {
 // Forward declaration of UserProfile for the heap
 struct UserProfile;
 
-/**
- * @struct UserHeap
- * @brief Represents the Max-Heap (Priority Queue) - Non-Linear Data Structure.
- */
+ //brief Represents the Max-Heap (Priority Queue) - Non-Linear Data Structure.
+
 typedef struct UserHeap {
     struct UserProfile** userArray; //heap implemented using array
     int size;
     int capacity;
 } UserHeap;
 
-/**
- * @struct UserProfile
- * @brief The main struct that ties all data together.
- */
+ //The main struct that ties all data together.
+
 typedef struct UserProfile {
     char name[50];
     char gender[10];
@@ -74,23 +56,16 @@ typedef struct UserProfile {
 } UserProfile;
 
 
-// ================================================================
-// --- (B) GLOBAL VARIABLE DECLARATION ---
-// ================================================================
-
+//global variable declaration
 extern UserHeap* g_userHeap;
 
-
-// ================================================================
-// --- (C) FUNCTION PROTOTYPES (DECLARATIONS) ---
-// ================================================================
-
-// --- 1. Wealth Tree Functions ---
+//fn declarations
+//  1. Wealth Tree Function
 WealthNode* createWealthNode(const char* name, double value);
 void addWealthChild(WealthNode* parent, WealthNode* newChild);
 WealthNode* findWealthNode(WealthNode* root, const char* name);
 
-// --- 2. Max-Heap (Priority Queue) Functions ---
+// 2. Max-Heap (Priority Queue) Functions
 UserHeap* createHeap(int capacity);
 void swapUsers(UserHeap* heap, int i, int j);
 void heapifyUp(UserHeap* heap, int index);
@@ -100,9 +75,8 @@ UserProfile* getTopWealthUser(UserHeap* heap);
 int findUserIndex(UserHeap* heap, UserProfile* user);
 void displayHeap(UserHeap* heap); 
 
-// --- 3. Core Integration Functions ---
-double recursiveUpdateAndGetWorth(WealthNode* root); // <-- This is the new func name
-
+// 3. Core Integration Functions 
+double recursiveUpdateAndGetWorth(WealthNode* root); // 
 void logExpenseToList(UserProfile* user, const char* category, const char* desc, 
                       double amount, InvestmentType invType);
 
@@ -114,9 +88,8 @@ void finalizeUserUpdates(UserProfile* user);
 
 void registerNewUser(const char* name, const char* gender);
 
-// predictStock prototype was removed
 
-// --- 4. Print & Cleanup Functions ---
+//  4. Print & Cleanup Functions
 void printExpenseLog(ExpenditureNode* head);
 void printWealthTree(WealthNode* root, int indent);
 void freeExpenseList(ExpenditureNode* head);
@@ -124,4 +97,4 @@ void freeWealthTree(WealthNode* root);
 void freeHeap(UserHeap* heap);
 
 
-#endif // WEALTH_H
+#endif 
