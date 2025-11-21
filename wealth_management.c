@@ -2,75 +2,73 @@
 #include <string.h> 
 #include <stdlib.h> 
 #include <stdio.h>  
-#include <ctype.h> // For strcicmp (if needed here, though it's in main)
+#include <ctype.h> 
+#include <math.h> 
 
-//global definition for user heap - mentioned as extern in header
 UserHeap* g_userHeap = NULL;
 
-
 WealthNode* createWealthNode(const char* name, double value) {
-    //function to create a wealthNode;allocate memory and initialize values to NULL
     WealthNode* newNode = (WealthNode*)malloc(sizeof(WealthNode));
     if (newNode == NULL) {
         printf("ERROR: Memory allocation failed for WealthNode.\n");
         exit(1);
     }
-
     strncpy(newNode->name, name, 49);
     newNode->name[49] = '\0';
     newNode->value = value;
+    newNode->interestRate = 0.0;
     newNode->firstChild = NULL;
     newNode->nextSibling = NULL;
     return newNode;
 }
 
 void addWealthChild(WealthNode* parent, WealthNode* newChild) {
-    if (parent == NULL || newChild == NULL){ //if function parameter is not provided/is NULL
+    if (parent == NULL || newChild == NULL){ 
         return; 
     }
-    if (parent->firstChild == NULL) {//if parent has no children yet
+    if (parent->firstChild == NULL) {
         parent->firstChild = newChild;
     } else {
         WealthNode* temp = parent->firstChild;
-        while (temp->nextSibling != NULL){ //going till the last child
+        while (temp->nextSibling != NULL){ 
             temp = temp->nextSibling;
         }
-        temp->nextSibling = newChild;//adding the new node
+        temp->nextSibling = newChild;
     }
 }
 
 WealthNode* findWealthNode(WealthNode* root, const char* name) {
-    if (root == NULL) { //failure base case- stops the recursion after traversal till leaf hasn't found required node
+    if (root == NULL) {
         return NULL;
     }
     if (strcmp(root->name, name) == 0) {
-        return root;  //success base case - returns found node and stops recursion
+        return root; 
     }
-    WealthNode* found = findWealthNode(root->firstChild, name);//recursively searches in all children of current root
+    WealthNode* found = findWealthNode(root->firstChild, name);
     if (found != NULL) {
-        return found; //success base case - returns found node and stops recursion
+        return found;
     }
-    return findWealthNode(root->nextSibling, name);//then takes the sibling branch if not found among current root or its children
+    return findWealthNode(root->nextSibling, name);
 }
 
-void printWealthTree(WealthNode* root, int indent) {//takes indent as param for matching root lvl when printing
-    //recursively printing wealth tree
+void printWealthTree(WealthNode* root, int indent) {
     if (root == NULL) {
         return; 
     }
     for (int i = 0; i < indent; i++) {
-        printf("  ");
+        printf("  "); 
     }
-    printf("+- %s: (Rs.%.2f)\n", root->name, root->value);
-    //traverses through (and prints) all children of a node first
-    printWealthTree(root->firstChild, indent + 2);//increases indent/spacing by 2 for each child lvl
-    //then recursively moves to all siblings of the current node
+    if (root->interestRate > 0.0) {
+        printf("+- %s: (Rs.%.2f) [Rate: %.1f%%]\n", root->name, root->value, root->interestRate);
+    } else {
+        printf("+- %s: (Rs.%.2f)\n", root->name, root->value);
+    }
+    printWealthTree(root->firstChild, indent + 2); 
     printWealthTree(root->nextSibling, indent);
 }
 
 
 void freeWealthTree(WealthNode* root) {
-    //recursively frees entire tree
     if (root == NULL) {
         return; 
     }
@@ -79,10 +77,6 @@ void freeWealthTree(WealthNode* root) {
     free(root);
 }
 
-/*compare two users to decide MAX-heap order.
-- higher netWorth = higher priority
-- if equal, name earlier in A–Z = higher priority
-returns 0 when they are null/identical, -1 when b is greater and 1 when a is greater*/
 static int userCompare(const UserProfile* a, const UserProfile* b) {
     if (a == NULL && b == NULL) return 0;
     if (a == NULL) return -1;
@@ -91,33 +85,18 @@ static int userCompare(const UserProfile* a, const UserProfile* b) {
     if (a->netWorth > b->netWorth) return 1;
     if (a->netWorth < b->netWorth) return -1;
 
-    //tie-break by name
     int cmp = strcmp(a->name, b->name);
-    if (cmp > 0) return 1;     //a is above b
-    if (cmp < 0) return -1;    //a is below b
+    if (cmp < 0) return 1;
+    if (cmp > 0) return -1;
     return 0;
 }
 
-//Creates heap with given capacity - sets to 1 if not given/incorrectly entered
 UserHeap* createHeap(int capacity) {
     if (capacity <= 0) capacity = 1;
-
-    //allocating memory for user heap
     UserHeap* heap = (UserHeap*)malloc(sizeof(UserHeap));
-    if (heap == NULL) {
-        printf("Memory allocation for heap failed.\n");
-        return NULL;
-    }
-
-    //allocating memory for userArray present within userHeap struct
+    if (heap == NULL) return NULL;
     heap->userArray = (UserProfile**)malloc(sizeof(UserProfile*) * capacity);
-    if (heap->userArray == NULL) {
-        printf("Memory allocation for heap array failed.\n");
-        free(heap);
-        return NULL;
-    }
-
-    //initializes array slots to NULL
+    if (heap->userArray == NULL) { free(heap); return NULL; }
     for (int i = 0; i < capacity; i++) heap->userArray[i] = NULL;
     heap->size = 0;
     heap->capacity = capacity;
@@ -125,25 +104,17 @@ UserHeap* createHeap(int capacity) {
 }
 
 void swapUsers(UserHeap* heap, int i, int j) {
-    //swaps two positions in the heap array - used during heapification
-    if (heap == NULL || heap->userArray == NULL) return; //checks if userHeap, or userArray are empty
-    if (i < 0 || j < 0 || i >= heap->size || j >= heap->size) return; //checks if positions to be swapped are valid
-
-    //swapping logic using temporary var
+    if (heap == NULL || heap->userArray == NULL) return;
+    if (i < 0 || j < 0 || i >= heap->size || j >= heap->size) return;
     UserProfile* temp = heap->userArray[i];
     heap->userArray[i] = heap->userArray[j];
     heap->userArray[j] = temp;
 }
 
 void heapifyUp(UserHeap* heap, int index) {
-    //moves a node up until heap property holds
     if (heap == NULL || heap->userArray == NULL) return;
-
-    //traverses from leaf nodes to root node of heap
     while (index > 0) {
         int parent = (index - 1) / 2;
-
-        //checks if child has higher priority than parent, swaps accordingly
         if (userCompare(heap->userArray[index], heap->userArray[parent]) > 0) {
             swapUsers(heap, index, parent);
             index = parent;
@@ -154,22 +125,20 @@ void heapifyUp(UserHeap* heap, int index) {
 }
 
 void heapifyDown(UserHeap* heap, int index) {
-    //move a node down until heap property holds
     if (heap == NULL || heap->userArray == NULL) return;
     while (1) {
         int left = index * 2 + 1;
         int right = index * 2 + 2;
         int largest = index;
         if (left < heap->size &&
-            userCompare(heap->userArray[left], heap->userArray[largest]) > 0) { //checks for left child, then compares child and current largest(index)
+            userCompare(heap->userArray[left], heap->userArray[largest]) > 0) {
             largest = left;
         }
         if (right < heap->size &&
-            userCompare(heap->userArray[right], heap->userArray[largest]) > 0) { //now checks for right child, then compares child and current largest(index)
+            userCompare(heap->userArray[right], heap->userArray[largest]) > 0) {
             largest = right;
         }
-
-        if (largest != index) { //if one of the children is larger, bubbles current node down
+        if (largest != index) {
             swapUsers(heap, index, largest);
             index = largest;
         } else {
@@ -178,73 +147,36 @@ void heapifyDown(UserHeap* heap, int index) {
     }
 }
 
-
 void heapInsert(UserHeap* heap, UserProfile* user) {
-    //insert a users and fixes heap order
     if (heap == NULL || heap->userArray == NULL || user == NULL) return;
-
-    //increases heap capacity if needed
     if (heap->size >= heap->capacity) {
         int newCap = heap->capacity * 2;
-        if (newCap == 0) newCap = 10; //handles edgecase of initial capacity 0
+        if (newCap == 0) newCap = 10;
         UserProfile** newArr =
             (UserProfile**)realloc(heap->userArray, sizeof(UserProfile*) * newCap);
-        if (newArr == NULL) {
-            printf("Heap resize failed.\n");
-            return;
-        }
-        //initalizes new slots to NULL
+        if (newArr == NULL) return;
         for (int i = heap->capacity; i < newCap; i++) newArr[i] = NULL;
         heap->userArray = newArr;
         heap->capacity = newCap;
     }
-
-    //adds a node at the bottom of the heap then heapifies upward
     heap->userArray[heap->size] = user;
     heapifyUp(heap, heap->size);
-    //updates heap size
     heap->size++;
 }
 
-
-//return pointer to richest user(top). Null if empty
 UserProfile* getTopWealthUser(UserHeap* heap) {
-    if (heap == NULL || heap->userArray == NULL || heap->size <= 0) {
-        return NULL;
-    }
-
-    UserProfile* topUser = heap->userArray[0];
-
-    // If size > 0, index 0 should NEVER be NULL. This indicates heap corruption.
-    if (topUser == NULL) {
-        fprintf(stderr, "Error in getTopWealthUser: Heap corrupted. Top user at index 0 is NULL\n");
-        return NULL;
-    }
-    return topUser;
+    if (heap == NULL || heap->userArray == NULL || heap->size <= 0) return NULL;
+    return heap->userArray[0];
 }
 
-//find the index of a given user pointer 
 int findUserIndex(UserHeap* heap, UserProfile* user) {
-    if (heap == NULL || user == NULL || heap->userArray == NULL) {
-        return -1;
-    }
-
-    //heap size should never be negative, indicates larger error
-    if (heap->size < 0){
-        fprintf(stderr, "Error in findUserIndex: Invalid heap size: %d\n", heap->size);
-        return -1;
-    }
-
-    //traverses through heap
+    if (heap == NULL || user == NULL || heap->userArray == NULL) return -1;
     for (int i = 0; i < heap->size; i++) {
-        if (heap->userArray[i] == user) {
-            return i;
-        }
+        if (heap->userArray[i] == user) return i;
     }
-    return -1; //not found
+    return -1;
 }
 
-//prints all the heap entries(in array order)
 void displayHeap(UserHeap* heap) {
     if (heap == NULL || heap->size == 0) {
         printf("\nNo users in the system to display.\n");
@@ -258,14 +190,10 @@ void displayHeap(UserHeap* heap) {
     }
 }
 
-//recursively sum children to compute total networth(treat expenses as negative)
 double recursiveUpdateAndGetWorth(WealthNode* root) {
-    if (root == NULL) {
-        return 0.0;
-    }
-    if (root->firstChild == NULL) {
-        return root->value;
-    }
+    if (root == NULL) return 0.0;
+    if (root->firstChild == NULL) return root->value;
+    
     double childrenSum = 0.0;
     WealthNode* child = root->firstChild;
     while (child != NULL) {
@@ -273,36 +201,47 @@ double recursiveUpdateAndGetWorth(WealthNode* root) {
         child = child->nextSibling;
     }
     root->value = childrenSum;
-    if (strcmp(root->name, "Expenses") == 0) {
-        return -root->value;
-    }
+    if (strcmp(root->name, "Expenses") == 0) return -root->value;
     return root->value;
 }
 
-//recalculate user's networth and fix their heap position
+double calculateProjectedNetWorth(WealthNode* root, int years) {
+    if (root == NULL) return 0.0;
+
+    if (root->firstChild == NULL) {
+        double projectedValue = root->value;
+        if (root->interestRate > 0.0) {
+            projectedValue = root->value * pow((1.0 + root->interestRate / 100.0), years);
+        }
+        return projectedValue;
+    }
+
+    double childrenSum = 0.0;
+    WealthNode* child = root->firstChild;
+    while (child != NULL) {
+        childrenSum += calculateProjectedNetWorth(child, years);
+        child = child->nextSibling;
+    }
+
+    if (strcmp(root->name, "Expenses") == 0) {
+        return -root->value; 
+    }
+
+    return childrenSum;
+}
+
 void finalizeUserUpdates(UserProfile* user) {
-    if (user == NULL || g_userHeap == NULL) {
-        return;
-    }
+    if (user == NULL || g_userHeap == NULL) return;
     
-    if (user->wealthTreeRoot == NULL) {
-        user->netWorth = 0.0;
-    }
-
     double oldNetWorth = user->netWorth;
-
     if (user->wealthTreeRoot != NULL) {
         user->netWorth = recursiveUpdateAndGetWorth(user->wealthTreeRoot);
         user->wealthTreeRoot->value = user->netWorth;
     }
 
     int userIndex = findUserIndex(g_userHeap, user);
-    if (userIndex == -1) {
-        fprintf(stderr, "Error [finalizeUserUpdates]: User '%s' not found in heap. Cannot update position.\n", user->name);
-        return;
-    }
+    if (userIndex == -1) return;
 
-    //move up if richer, else move down
     if (user->netWorth > oldNetWorth) {
         heapifyUp(g_userHeap, userIndex);
     } else if (user->netWorth < oldNetWorth) {
@@ -310,17 +249,12 @@ void finalizeUserUpdates(UserProfile* user) {
     }
 }
 
-//free all users inside heap, then free heap memory
 void freeHeap(UserHeap* heap) {
-    if (heap == NULL) {
-        return;
-    }
+    if (heap == NULL) return;
     if (heap->userArray != NULL) {
         for (int i = 0; i < heap->size; i++) {
             UserProfile* user = heap->userArray[i];
-            if (user == NULL) {
-                continue; // Silently skip
-            }
+            if (user == NULL) continue;
             if (user->wealthTreeRoot != NULL) {
                 freeWealthTree(user->wealthTreeRoot);
                 user->wealthTreeRoot = NULL;
@@ -336,24 +270,17 @@ void freeHeap(UserHeap* heap) {
         heap->userArray = NULL;
     }
     free(heap);
-    if (heap == g_userHeap) {
-        g_userHeap = NULL;
-    }
+    if (heap == g_userHeap) g_userHeap = NULL;
 }
 
-//push a new expense entry at the head of the user's list
 void logExpenseToList(UserProfile* user, const char* category, const char* desc, double amount, InvestmentType invType) {
      if (!user || !category || !desc || amount < 0) {
         printf("Invalid transaction details.\n");
         return;
     }
     ExpenditureNode* newNode = (ExpenditureNode*)malloc(sizeof(ExpenditureNode));
-    if (!newNode) {
-        printf("Memory allocation failed.\n");
-        return;
-    }
+    if (!newNode) return;
 
-    //copy strings and fill fields
     strncpy(newNode->category, category, 49);
     newNode->category[49] = '\0';
     strncpy(newNode->description, desc, 99);
@@ -367,98 +294,92 @@ void logExpenseToList(UserProfile* user, const char* category, const char* desc,
     user->expenseListHead = newNode;
 }
 
-/**
- * @brief Updates a specific investment node's value in the tree.
- * If the node does not exist, it creates it under "Investments".
- * Also recalculates net worth and fixes heap position.
- */
-void updateInvestmentValue(UserProfile* user, const char* nodeName, double newValue) {
-    if (!user || !user->wealthTreeRoot || !nodeName) {
-        printf("Invalid input to updateInvestmentValue.\n");
-        return;
-    }
-    if (newValue < 0) {
-        printf("Negative value not allowed.\n");
-        return;
-    }
+void manageStock(UserProfile* user, const char* ticker, double amount, double rate, int isAdding) {
+    if (!user || !user->wealthTreeRoot) return;
 
-    WealthNode* node = findWealthNode(user->wealthTreeRoot, nodeName);
+    WealthNode* investments = findWealthNode(user->wealthTreeRoot, "Investments");
+    if (!investments) return;
     
-    if (!node) {
-        printf("Warning: Node '%s' not found. Creating it...\n", nodeName);
-        
-        // 1. Find the main "Investments" parent node
-        WealthNode* investments = findWealthNode(user->wealthTreeRoot, "Investments");
-        if (investments == NULL) {
-            printf("Error: Critical - 'Investments' branch not found. Cannot add node.\n");
+    WealthNode* stockCategory = findWealthNode(investments, "stock");
+    if (!stockCategory) return; 
+
+    WealthNode* specificStock = findWealthNode(stockCategory, ticker);
+
+    if (!specificStock) {
+        if (isAdding) {
+            specificStock = createWealthNode(ticker, 0.0);
+            addWealthChild(stockCategory, specificStock);
+        } else {
+            printf("Error: You do not own any stock named '%s'. Cannot update.\n", ticker);
             return;
         }
+    }
 
-        // 2. Create the new node
-        WealthNode* newNode = createWealthNode(nodeName, newValue);
-        
-        // 3. Add it to the "Investments" branch
-        addWealthChild(investments, newNode);
-        printf("Created new asset '%s' with value %.2f\n", nodeName, newValue);
-        
-
+    if (isAdding) {
+        specificStock->value += amount;
     } else {
-        // --- This was the original logic ---
-        node->value = newValue;
-        printf("Updated '%s' to %.2f\n", nodeName, newValue);
+        specificStock->value = amount; 
     }
     
-    // Finalize the heap and net worth in either case
+    if (rate >= 0) {
+        specificStock->interestRate = rate;
+    }
+
+    printf("Stock '%s' updated. New Value: %.2f, Rate: %.1f%%\n", ticker, specificStock->value, specificStock->interestRate);
     finalizeUserUpdates(user);
 }
 
-//add amount to a given expense category
-void updateExpenseCategoryTotal(UserProfile* user, const char* category, double amount) {
-    if (!user || !user->wealthTreeRoot || !category) { 
-        printf("Invalid input to updateExpenseCategoryTotal.\n");
-        return;
-    }
+void manageAsset(UserProfile* user, const char* assetName, double amount, double rate, int isAdding) {
+    if (!user || !user->wealthTreeRoot) return;
+
+    WealthNode* investments = findWealthNode(user->wealthTreeRoot, "Investments");
+    if (!investments) return;
+
+    WealthNode* assetNode = findWealthNode(investments, assetName);
     
-    //go to the expenses branch
-    WealthNode* expensesRoot = findWealthNode(user->wealthTreeRoot, "Expenses"); //no expense has been made yet
-    if (!expensesRoot) { //expense of that category hasn't been made yet
-        printf("Error: 'Expenses' category not found in tree.\n");
-        return;
+    if (!assetNode) {
+        assetNode = createWealthNode(assetName, 0.0);
+        addWealthChild(investments, assetNode);
     }
 
-    //find the category
-    WealthNode* node = findWealthNode(expensesRoot, category);
-    
-    if (!node) {
-        printf("Category '%s' not found under 'Expenses'.\n", category);
-        return;
+    if (isAdding) {
+        assetNode->value += amount;
+    } else {
+        assetNode->value = amount;
+    }
+
+    if (rate >= 0) {
+        assetNode->interestRate = rate;
     }
     
-    node->value += amount;
+    printf("Asset '%s' updated. New Value: %.2f, Rate: %.1f%%\n", assetName, assetNode->value, assetNode->interestRate);
+    finalizeUserUpdates(user);
 }
 
-//create a new user, build a tree and insert into heap
-void registerNewUser(const char* name, const char* gender) {
-    if (!name || !gender || strlen(name) == 0) {
-        printf("Invalid user details.\n");
-        return; 
-    }
-    UserProfile* user = (UserProfile*)malloc(sizeof(UserProfile));
-    if (!user) {
-        printf("Memory allocation failed.\n");
-        return; 
-    }
+void setWealthNodeValue(UserProfile* user, const char* nodeName, double newValue) {
+    if (!user || !user->wealthTreeRoot || !nodeName) return;
+    WealthNode* node = findWealthNode(user->wealthTreeRoot, nodeName);
+    if (node) node->value = newValue;
+}
 
-    //fill user fields
+void updateExpenseCategoryTotal(UserProfile* user, const char* category, double amount) {
+    if (!user || !user->wealthTreeRoot || !category) return;
+    WealthNode* expensesRoot = findWealthNode(user->wealthTreeRoot, "Expenses"); 
+    if (!expensesRoot) return;
+    WealthNode* node = findWealthNode(expensesRoot, category);
+    if (node) node->value += amount;
+}
+
+void registerNewUser(const char* name) {
+    if (!name || strlen(name) == 0) return; 
+    UserProfile* user = (UserProfile*)malloc(sizeof(UserProfile));
+    if (!user) return; 
+
     strncpy(user->name, name, 49);
     user->name[49] = '\0';
-    strncpy(user->gender, gender, 9);
-    user->gender[9] = '\0';
-    
     user->netWorth = 0.0;
     user->expenseListHead = NULL;
 
-    //build root and main branches of user's wealth tree
     user->wealthTreeRoot = createWealthNode(name, 0.0); 
     
     WealthNode* income = createWealthNode("Income", 0.0);
@@ -469,23 +390,21 @@ void registerNewUser(const char* name, const char* gender) {
     addWealthChild(user->wealthTreeRoot, expenses);
     addWealthChild(user->wealthTreeRoot, investments);
 
-    //add subnodes
     addWealthChild(income, createWealthNode("salary", 0.0));
 
     addWealthChild(investments, createWealthNode("gold", 0.0));
-    addWealthChild(investments, createWealthNode("stock", 0.0));
+    addWealthChild(investments, createWealthNode("stock", 0.0)); 
     addWealthChild(investments, createWealthNode("real estate", 0.0));
     addWealthChild(investments, createWealthNode("others", 0.0));
 
     addWealthChild(expenses, createWealthNode("health", 0.0));
     addWealthChild(expenses, createWealthNode("travel", 0.0));
+    addWealthChild(expenses, createWealthNode("education", 0.0));
     addWealthChild(expenses, createWealthNode("regular", 0.0));
     
-    //add user to global heap
     heapInsert(g_userHeap, user);
 }
 
-//print the expense list
 void printExpenseLog(ExpenditureNode* head) {
     if (!head) {
         printf("No transactions found.\n");
@@ -494,18 +413,14 @@ void printExpenseLog(ExpenditureNode* head) {
     printf("\n--- Transaction Log ---\n");
     ExpenditureNode* temp = head;
     while(temp != NULL) {
-        //ctime converts time to a readable string
         char* timeStr = ctime(&temp->date); 
-        //remove trailing newline
         timeStr[strcspn(timeStr, "\n")] = 0; 
-
         printf("  [%s] %s - Rs.%.2f (%s)\n", 
                temp->category, temp->description, temp->amount, timeStr);
         temp = temp->next;
     }
 }
 
-//free all the nodes in the linked list
 void freeExpenseList(ExpenditureNode* head) {
     ExpenditureNode* temp;
     while (head != NULL) {
