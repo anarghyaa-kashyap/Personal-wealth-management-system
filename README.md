@@ -4,12 +4,13 @@ A console-based application written in C. This program allows multiple users to 
 
 ## Key Features
 
-* **Multi-User System:** Users can register and log in to access their own private financial data.
-* **Wealth Tracking:** Organizes all assets and expenses into a general tree structure, including categories like "Investments" (stocks, gold, property) and "Expenses" (health, travel).
-* **Transaction Logging:** All individual transactions (expenses and investment purchases) are logged to a linear linked list for detailed record-keeping.
-* **Dynamic Net Worth Calculation:** Automatically recalculates a user's total net worth after every transaction, correctly summing assets and subtracting expenses.
-* **User Priority:** All users are stored in a **Max-Heap**, allowing the system to find the "Top Wealthiest User" in constant $O(1)$ time.
-* **Portfolio Reporting:** Users can view a portfolio summary showing the *total cost* of their investments, which is separate from their *current market value*.
+* **Multi-User & Admin System:** Supports multiple concurrent user profiles with secure login. Includes a special **Admin Mode** (login as "admin") to view system-wide statistics and identify the top-ranked users.
+* **Comprehensive Wealth Tracking:** Organizes finances into a hierarchy of **Income** (salary), **Expenses** (health, travel, etc.), and **Investments**.
+* **Specific Asset Management:** Users can track **individual stock tickers** (e.g., AAPL, TSLA) separately from general assets like Gold or Real Estate. Each asset supports a custom **Annual Interest Rate**.
+* **Profit & Loss Portfolio Analysis:** A detailed reporting feature that compares the **Cost Basis** (from transaction logs) against the **Current Market Value** (from the wealth tree) to display the unrealized Gain/Loss for every asset.
+* **Projected Wealth Calculator:** Uses the assigned interest rates to calculate and display a user's **Projected Net Worth** for a future number of years using compound interest logic.
+* **Transaction Logging:** Every financial action is recorded in a linear linked list, creating a permanent history log of all expenses and purchases.
+* **Dynamic Net Worth & Ranking:** The system automatically recalculates Net Worth `(Assets + Income - Expenses)` after every update and uses a **Max-Heap** to instantly re-rank users by wealth in real-time.
 
 ## Data Structures Used
 
