@@ -177,7 +177,7 @@ void handleUpdateInvestment(UserProfile* user) {
         printf("Current Interest Rate (%%): ");
         rate = getDoubleInput("");
 
-        manageAsset(user, nodeName, value, rate, 0); // 0 = Setting value
+        manageAsset(user, nodeName, value, rate, 0);
     } else {
         printf("Invalid choice.\n");
     }
@@ -226,13 +226,10 @@ void handleViewInvestmentPortfolio(UserProfile* user) {
 
     WealthNode* invRoot = findWealthNode(user->wealthTreeRoot, "Investments");
     if (invRoot) {
-        
-        // 1. Handle Stocks separately (iterate children)
         WealthNode* stockCat = findWealthNode(invRoot, "stock");
         if (stockCat) {
             WealthNode* child = stockCat->firstChild;
             if (child == NULL) {
-                 // No stocks yet
             } else {
                 printf(" [STOCKS]\n");
                 while (child != NULL) {
@@ -250,18 +247,11 @@ void handleViewInvestmentPortfolio(UserProfile* user) {
             }
         }
 
-        // 2. Handle General Assets (Gold, Property, Others)
-        // We scan specifically for these known nodes
         const char* generics[] = {"gold", "real estate", "others"};
         printf(" [GENERAL]\n");
         for (int i = 0; i < 3; i++) {
             WealthNode* node = findWealthNode(invRoot, generics[i]);
             if (node) {
-                // For generic assets, "description" in expense list might vary, 
-                // but we track cost via Category enum usually. 
-                // However, to keep it simple consistent with stocks, let's aggregate 
-                // by ENUM type for these broad categories.
-                
                 double cost = 0.0;
                 ExpenditureNode* curr = user->expenseListHead;
                 InvestmentType targetType = INV_NONE;
@@ -411,3 +401,4 @@ int main() {
     return 0;
 
 }
+
