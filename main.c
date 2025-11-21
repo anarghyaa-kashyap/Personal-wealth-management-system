@@ -39,7 +39,6 @@ double getDoubleInput(const char* prompt) {
     }
 }
 
-//case insensitive string comparison
 int strcicmp(const char* s1, const char* s2) { 
     while (*s1 && *s2) {
         if (toupper((unsigned char)*s1) != toupper((unsigned char)*s2)) {
@@ -51,7 +50,6 @@ int strcicmp(const char* s1, const char* s2) {
     return *s1 - *s2;
 }
 
-//maps InvestmentType enum to its cahr name in the wealth tree
 const char* getInvestmentNodeName(InvestmentType type) {
     switch (type) {
         case INV_PROPERTY: return "real estate";
@@ -62,34 +60,34 @@ const char* getInvestmentNodeName(InvestmentType type) {
     }
 }
 
-//adding new transactions to the tree for a particular user
 void handleAddTransaction(UserProfile* user) {
-    if (user == NULL) {
-        printf("Error: Invalid user profile.\n");
-        return;
-    }
+    if (user == NULL) return;
+
     char category[50];
     char description[100];
     double amount;
+    double interestRate = 0.0;
     InvestmentType invType = INV_NONE;
+
     printf("\n--- Add New Transaction ---\n");
     printf("Select a category:\n");
     printf("  1. Health\n");
     printf("  2. Travel\n");
-    printf("  3. Regular\n");
-    printf("  4. Investment\n");
-    int catChoice = getIntInput("Enter choice (1-4): ");
+    printf("  3. Education\n");
+    printf("  4. Regular\n");
+    printf("  5. Investment\n");
+    int catChoice = getIntInput("Enter choice (1-5): ");
+
     switch (catChoice) {
         case 1: strcpy(category, "health"); break;
         case 2: strcpy(category, "travel"); break;
-        case 3: strcpy(category, "regular"); break;
-        case 4: strcpy(category, "investment"); break;
-        default:
-            printf("Invalid category choice.\n");
-            return;
+        case 3: strcpy(category, "education"); break;
+        case 4: strcpy(category, "regular"); break;
+        case 5: strcpy(category, "investment"); break;
+        default: printf("Invalid category choice.\n"); return;
     }
-    //if its an investment show the sub-menu
-    if (strcmp(category, "investment") == 0) { 
+
+    if (strcmp(category, "investment") == 0) {
         printf("\nSelect investment type:\n");
         printf("  1. Property\n");
         printf("  2. Stocks\n");
@@ -97,238 +95,242 @@ void handleAddTransaction(UserProfile* user) {
         printf("  4. Others\n");
         int choice = getIntInput("Enter type (1-4): ");
         switch (choice) {
-            case 1: invType = INV_PROPERTY; break; //enum values
+            case 1: invType = INV_PROPERTY; break;
             case 2: invType = INV_STOCKS;   break;
             case 3: invType = INV_GOLD;     break;
             case 4: invType = INV_OTHERS;   break;
-            default: 
-                printf("Invalid choice. Defaulting to 'Others'.\n");
-                invType = INV_OTHERS; 
-                break;
+            default: invType = INV_OTHERS; break;
         }
+        if (invType == INV_STOCKS) {
+            getStringInput("Enter Stock Name/Ticker (e.g., AAPL): ", description, 100);
+        } else {
+            getStringInput("Enter description: ", description, 100);
+        }
+        printf("Enter expected annual interest rate (%%) [0 for none]: ");
+        interestRate = getDoubleInput("");
+    } else {
+        getStringInput("Enter description: ", description, 100);
+        invType = INV_NONE;
     }
-    getStringInput("Enter description: ", description, 100);
-    
-    if (strlen(description) == 0) {
-        printf("Error: Description cannot be empty.\n");
-        return;
-    }
+
+    if (strlen(description) == 0) { printf("Error: Description cannot be empty.\n"); return; }
+
     amount = getDoubleInput("Enter amount: ");
-    if (amount <= 0) {
-        printf("Error: Amount must be positive.\n");
-        return;
-    }
-    logExpenseToList(user, category, description, amount, invType); //adds expense to the list of expenses
+    if (amount <= 0) { printf("Error: Amount must be positive.\n"); return; }
+
+    logExpenseToList(user, category, description, amount, invType);
+
     if (strcmp(category, "investment") == 0) {
-        const char* assetName = getInvestmentNodeName(invType); //maps the enum value to the correct tree node name
-        if (assetName != NULL) {
-            WealthNode* node = findWealthNode(user->wealthTreeRoot, assetName); //finds the specific node in the users tree
-            if (node != NULL) {
-                double newValue = node->value + amount;
-                updateInvestmentValue(user, assetName, newValue); //updates investment total value
-                printf("Investment purchase recorded. Asset '%s' updated.\n", assetName);
-            } else {
-                printf("Warning: Asset node '%s' not found in wealth tree.\n", assetName);
-            }
+        if (invType == INV_STOCKS) {
+            manageStock(user, description, amount, interestRate, 1); 
+        } else {
+            const char* assetName = getInvestmentNodeName(invType);
+            manageAsset(user, assetName, amount, interestRate, 1);
         }
     } else {
-        updateExpenseCategoryTotal(user, category, amount); //updates expense category total
+        updateExpenseCategoryTotal(user, category, amount);
+        finalizeUserUpdates(user);
     }
-    finalizeUserUpdates(user); //calculates user's networth and updates their position in the heap
     printf("Transaction logged successfully. New net worth: Rs.%.2f\n", user->netWorth);
 }
 
-//adding source of income like salary etc.
 void handleAddIncome(UserProfile* user) {
-    if (user == NULL) {
-        printf("Error: Invalid user profile.\n");
-        return;
-    }
-
+    if (user == NULL) return;
     printf("\n--- Add Income (Salary, etc.) ---\n");
     double amount = getDoubleInput("Enter amount to add: ");
-    if (amount <= 0) {
-        printf("Error: Amount must be positive.\n");
-        return;
-    }
+    if (amount <= 0) { printf("Error: Amount must be positive.\n"); return; }
 
-    WealthNode* salaryNode = findWealthNode(user->wealthTreeRoot, "salary"); //finds salary node in the users tree
-    if (salaryNode == NULL) {
-        printf("Error: 'salary' asset node not found. Cannot add income.\n");
-        return;
-    }
+    WealthNode* salaryNode = findWealthNode(user->wealthTreeRoot, "salary");
+    if (salaryNode == NULL) { printf("Error: 'salary' node not found.\n"); return; }
     
-    double newValue = salaryNode->value + amount;
-    
-    updateInvestmentValue(user, "salary", newValue); 
-    finalizeUserUpdates(user); //updates users networth and heap position
-    
+    setWealthNodeValue(user, "salary", salaryNode->value + amount); 
+    finalizeUserUpdates(user);
     printf("Income added successfully. New net worth: Rs.%.2f\n", user->netWorth);
 }
 
-//to change current market value of an asset
 void handleUpdateInvestment(UserProfile* user) {
-    if (user == NULL) {
-        printf("Error: Invalid user profile.\n");
-        return;
-    }
+    if (user == NULL) return;
+
+    printf("\n--- Update Market Value & Interest Rate ---\n");
+    printf("1. Update Specific Stock\n");
+    printf("2. Update General Asset (Gold, Real Estate, etc.)\n");
+    int choice = getIntInput("Enter choice: ");
 
     char nodeName[50];
-    double value;
+    double value, rate;
 
-    printf("\n--- Update Market Value of Investment ---\n");
-    printf("(Use this when your asset value changes, e.g., stocks go up)\n");
-    printf("Investment nodes: gold, stock, real estate, others\n");
-    getStringInput("Enter investment name to update: ", nodeName, 50);
+    if (choice == 1) {
+        getStringInput("Enter Stock Name/Ticker: ", nodeName, 50);
+        
+        printf("Current Market Value: ");
+        value = getDoubleInput("");
+        printf("Current Interest Rate (%%): ");
+        rate = getDoubleInput("");
+        
+        manageStock(user, nodeName, value, rate, 0)
 
-    if (strlen(nodeName) == 0) {
-        printf("Error: Investment name cannot be empty.\n");
-        return;
+    } else if (choice == 2) {
+        printf("Asset nodes: gold, real estate, others\n");
+        getStringInput("Enter asset name: ", nodeName, 50);
+        printf("Current Market Value: ");
+        value = getDoubleInput("");
+        printf("Current Interest Rate (%%): ");
+        rate = getDoubleInput("");
+
+        manageAsset(user, nodeName, value, rate, 0); // 0 = Setting value
+    } else {
+        printf("Invalid choice.\n");
     }
-    
-    WealthNode* invRoot = findWealthNode(user->wealthTreeRoot, "Investments");
-    WealthNode* node = NULL;
-    
-    //find the node under the investments branch - case insensitive 
-    if (invRoot) {
-        WealthNode* child = invRoot->firstChild;
-        while(child) {
-            if (strcicmp(child->name, nodeName) == 0) {
-                node = child; //found the match
-                break;
-            }
-            child = child->nextSibling;
-        }
-    }
-    
-    if (node == NULL) {
-        printf("Error: Investment '%s' not found in your wealth tree.\n", nodeName);
-        return;
-    }
-
-    printf("Current value: Rs.%.2f\n", node->value);
-    value = getDoubleInput("Enter new total value: ");
-
-    if (value < 0) {
-        printf("Error: Value cannot be negative.\n");
-        return;
-    }
-
-    updateInvestmentValue(user, node->name, value); //updates the nodes value
-    finalizeUserUpdates(user);
-
-    printf("Investment market value updated successfully!\n");
-    printf("New net worth: Rs.%.2f\n", user->netWorth);
 }
 
-//shows the total cost of investments 
+void handleProjectedWealth(UserProfile* user) {
+    if (user == NULL) return;
+    
+    printf("\n--- Projected Net Worth Calculator ---\n");
+    printf("This calculation assumes compound interest on assets with set rates.\n");
+    int years = getIntInput("Enter number of years to project: ");
+    
+    if (years < 0) { printf("Years cannot be negative.\n"); return; }
+
+    double projected = calculateProjectedNetWorth(user->wealthTreeRoot, years);
+    
+    printf("\nCurrent Net Worth:   Rs.%.2f\n", user->netWorth);
+    printf("Projected (%d yrs):  Rs.%.2f\n", years, projected);
+    printf("Estimated Growth:    Rs.%.2f\n", projected - user->netWorth);
+}
+
+double getCostBasis(UserProfile* user, const char* name) {
+    double total = 0.0;
+    ExpenditureNode* current = user->expenseListHead;
+    while (current != NULL) {
+        if (strcicmp(current->description, name) == 0) {
+            total += current->amount;
+        }
+        current = current->next;
+    }
+    return total;
+}
+
 void handleViewInvestmentPortfolio(UserProfile* user) {
     if (user == NULL) {
         printf("Error: Invalid user profile.\n");
         return;
     }
 
-    double portfolioTotals[5] = {0.0, 0.0, 0.0, 0.0, 0.0}; //temporary array to hold sums
+    printf("\n==========================================================================\n");
+    printf(" %-20s | %-12s | %-12s | %-10s\n", "Asset", "Cost Basis", "Market Value", "Gain/Loss");
+    printf("==========================================================================\n");
 
-    //iterates through the transaction list to find the sum of costs
-    ExpenditureNode* current = user->expenseListHead;
-    while (current != NULL) {
-        if (current->investmentType != INV_NONE && current->investmentType < 5) {
-            portfolioTotals[current->investmentType] += current->amount;
+    double totalCost = 0.0;
+    double totalValue = 0.0;
+
+    WealthNode* invRoot = findWealthNode(user->wealthTreeRoot, "Investments");
+    if (invRoot) {
+        
+        // 1. Handle Stocks separately (iterate children)
+        WealthNode* stockCat = findWealthNode(invRoot, "stock");
+        if (stockCat) {
+            WealthNode* child = stockCat->firstChild;
+            if (child == NULL) {
+                 // No stocks yet
+            } else {
+                printf(" [STOCKS]\n");
+                while (child != NULL) {
+                    double cost = getCostBasis(user, child->name);
+                    double market = child->value;
+                    double diff = market - cost;
+                    
+                    printf(" %-20s | Rs.%-9.2f | Rs.%-9.2f | Rs.%-8.2f\n", 
+                           child->name, cost, market, diff);
+                    
+                    totalCost += cost;
+                    totalValue += market;
+                    child = child->nextSibling;
+                }
+            }
         }
-        current = current->next;
-    }
 
-    printf("\n--- %s's Investment Portfolio (by Total Cost) ---\n", user->name);
-    printf("  Property:    Rs.%.2f\n", portfolioTotals[INV_PROPERTY]);
-    printf("  Stocks:      Rs.%.2f\n", portfolioTotals[INV_STOCKS]);
-    printf("  Gold:        Rs.%.2f\n", portfolioTotals[INV_GOLD]);
-    printf("  Others:      Rs.%.2f\n", portfolioTotals[INV_OTHERS]);
-    printf("--------------------------------------------------\n");
+        // 2. Handle General Assets (Gold, Property, Others)
+        // We scan specifically for these known nodes
+        const char* generics[] = {"gold", "real estate", "others"};
+        printf(" [GENERAL]\n");
+        for (int i = 0; i < 3; i++) {
+            WealthNode* node = findWealthNode(invRoot, generics[i]);
+            if (node) {
+                // For generic assets, "description" in expense list might vary, 
+                // but we track cost via Category enum usually. 
+                // However, to keep it simple consistent with stocks, let's aggregate 
+                // by ENUM type for these broad categories.
+                
+                double cost = 0.0;
+                ExpenditureNode* curr = user->expenseListHead;
+                InvestmentType targetType = INV_NONE;
+                if (strcmp(generics[i], "gold")==0) targetType = INV_GOLD;
+                if (strcmp(generics[i], "real estate")==0) targetType = INV_PROPERTY;
+                if (strcmp(generics[i], "others")==0) targetType = INV_OTHERS;
 
-    double totalInvested = portfolioTotals[INV_PROPERTY] +
-                           portfolioTotals[INV_STOCKS] +
-                           portfolioTotals[INV_GOLD] +
-                           portfolioTotals[INV_OTHERS];
+                while(curr) {
+                    if (curr->investmentType == targetType) cost += curr->amount;
+                    curr = curr->next;
+                }
 
-    printf("  Total Invested (Cost): Rs.%.2f\n", totalInvested);
-}
-
-void handleRegister() {
-    char name[50];
-    char gender[10];
-
-    printf("\n--- Register New User ---\n");
-    getStringInput("Enter name: ", name, 50);
-
-    if (strlen(name) == 0) {
-        printf("Error: Name cannot be empty.\n");
-        return;
-    }
-
-    if (strcicmp(name, "admin") == 0) { //doesnt let someone register as admin
-         printf("Error: 'admin' is a reserved name.\n");
-         return;
-    }
-
-    if (g_userHeap != NULL) { //checking for the user - case insensitive
-        for (int i = 0; i < g_userHeap->size; i++) {
-            if (strcicmp(g_userHeap->userArray[i]->name, name) == 0) {
-                printf("Error: A user with that name (or similar case) already exists.\n");
-                return;
+                double market = node->value;
+                double diff = market - cost;
+                 printf(" %-20s | Rs.%-9.2f | Rs.%-9.2f | Rs.%-8.2f\n", 
+                           generics[i], cost, market, diff);
+                
+                totalCost += cost;
+                totalValue += market;
             }
         }
     }
 
-    getStringInput("Enter gender: ", gender, 10);
+    printf("--------------------------------------------------------------------------\n");
+    printf(" %-20s | Rs.%-9.2f | Rs.%-9.2f | Rs.%-8.2f\n", 
+           "TOTAL", totalCost, totalValue, totalValue - totalCost);
+    printf("==========================================================================\n");
+}
 
-    if (strlen(gender) == 0) {
-        printf("Error: Gender cannot be empty.\n");
-        return;
+void handleRegister() {
+    char name[50];
+    printf("\n--- Register New User ---\n");
+    getStringInput("Enter name: ", name, 50);
+    if (strlen(name) == 0) { printf("Error: Name cannot be empty.\n"); return; }
+    if (strcicmp(name, "admin") == 0) { printf("Error: 'admin' is a reserved name.\n"); return; }
+    if (g_userHeap != NULL) {
+        for (int i = 0; i < g_userHeap->size; i++) {
+            if (strcicmp(g_userHeap->userArray[i]->name, name) == 0) {
+                printf("Error: User already exists.\n"); return;
+            }
+        }
     }
-
-    registerNewUser(name, gender);
+    registerNewUser(name);
     printf("User '%s' registered successfully!\n", name);
 }
 
 UserProfile* handleLogin() {
-    if (g_userHeap == NULL || g_userHeap->size == 0) {
-        printf("\nError: No users registered in the system.\n");
-        return NULL;
-    }
-
+    if (g_userHeap == NULL || g_userHeap->size == 0) { printf("\nError: No users.\n"); return NULL; }
     char name[50];
     printf("\n--- User Login ---\n");
     getStringInput("Enter name: ", name, 50);
-
-    if (strlen(name) == 0) {
-        printf("Error: Name cannot be empty.\n");
-        return NULL;
-    }
+    if (strlen(name) == 0) return NULL;
     
-    //if the user is the admin
     if (strcicmp(name, "admin") == 0) {
-        printf("Admin login successful. Welcome.\n");
         static UserProfile adminUser; 
         strcpy(adminUser.name, "admin");
         adminUser.netWorth = 0; 
         return &adminUser;
     }
-
-    //searching for a normal user
     for (int i = 0; i < g_userHeap->size; i++) {
-        if (g_userHeap->userArray[i] != NULL &&
-            strcicmp(g_userHeap->userArray[i]->name, name) == 0) {
+        if (g_userHeap->userArray[i] != NULL && strcicmp(g_userHeap->userArray[i]->name, name) == 0) {
             printf("Login successful. Welcome, %s!\n", g_userHeap->userArray[i]->name);
             return g_userHeap->userArray[i];
         }
     }
-
-    printf("Error: User '%s' not found.\n", name);
+    printf("Error: User not found.\n");
     return NULL;
 }
 
-//admin only menu
 void adminMenu() {
     int choice = 0;
     while (choice != 3) {
@@ -337,123 +339,74 @@ void adminMenu() {
         printf("2. Display All Users\n");
         printf("3. Logout\n");
         choice = getIntInput("Enter your choice: ");
-
         switch (choice) {
             case 1: {
                 UserProfile* topUser = getTopWealthUser(g_userHeap);
-                if (topUser == NULL) {
-                    printf("\nNo users in the system yet.\n");
-                } else {
-                    printf("\n--- Top Wealthiest User ---\n");
-                    printf("Name:      %s\n", topUser->name);
-                    printf("Net Worth: $%.2f\n", topUser->netWorth);
-                }
+                if (topUser) printf("\nTop User: %s (Rs.%.2f)\n", topUser->name, topUser->netWorth);
+                else printf("\nNo users.\n");
                 break;
             }
-            case 2:
-                displayHeap(g_userHeap); //can see all the users in order of wealth 
-                break;
-            case 3:
-                printf("Logging out admin...\n");
-                break;
-            default:
-                printf("Invalid choice. Please try again.\n");
+            case 2: displayHeap(g_userHeap); break;
+            case 3: printf("Logging out admin...\n"); break;
+            default: printf("Invalid choice.\n");
         }
     }
 }
 
-
 void loggedInMenu(UserProfile* user) {
-    if (user == NULL) {
-        printf("Error: Invalid user session.\n");
-        return;
-    }
-
+    if (user == NULL) return;
     int choice = 0;
-    while (choice != 7) {
+    while (choice != 9) { 
         printf("\n--- Welcome, %s (Net Worth: Rs.%.2f) ---\n", user->name, user->netWorth);
-        printf("1. Add Transaction (Expense or Investment Purchase)\n");
-        printf("2. Add Income (Salary, etc.)\n"); 
+        printf("1. Add Transaction\n");
+        printf("2. Add Income\n"); 
         printf("3. Update Investment Market Value\n");
-        printf("4. View My Transaction Log\n");
-        printf("5. View My Wealth Tree (Category Totals)\n");
-        printf("6. View Investment Portfolio (by Cost)\n");
-        printf("7. Logout\n"); // <-- Renumbered
+        printf("4. View Transaction Log\n");
+        printf("5. View Wealth Tree\n");
+        printf("6. View Investment Portfolio\n");
+        printf("7. View Projected Net Worth (Prediction)\n"); 
+        printf("8. Logout\n");
         choice = getIntInput("Enter your choice: ");
-
         switch (choice) {
-            case 1:
-                handleAddTransaction(user);
-                break;
-            case 2:
-                handleAddIncome(user);
-                break;
-            case 3:
-                handleUpdateInvestment(user);
-                break;
-            case 4:
-                printf("\n--- %s's Transaction Log ---\n", user->name);
-                printExpenseLog(user->expenseListHead);
-                break;
-            case 5:
+            case 1: handleAddTransaction(user); break;
+            case 2: handleAddIncome(user); break;
+            case 3: handleUpdateInvestment(user); break;
+            case 4: printExpenseLog(user->expenseListHead); break;
+            case 5: 
                 printf("\n--- %s's Wealth Tree ---\n", user->name);
-                printWealthTree(user->wealthTreeRoot, 0);
+                printWealthTree(user->wealthTreeRoot, 0); 
                 break;
-            case 6:
-                handleViewInvestmentPortfolio(user);
-                break;
-            case 7: // <-- Renumbered
-                printf("Logging out...\n");
-                break;
-            default:
-                printf("Invalid choice. Please try again.\n");
+            case 6: handleViewInvestmentPortfolio(user); break;
+            case 7: handleProjectedWealth(user); break; 
+            case 8: printf("Logging out...\n"); return; 
+            default: printf("Invalid choice.\n");
         }
     }
 }
 
 int main() {
-    int choice = 0;
-
-    g_userHeap = createHeap(100); //initializing the global heap
-    if (g_userHeap == NULL) {
-        printf("Error: Failed to initialize the system.\n");
-        return 1;
-    }
-
+    g_userHeap = createHeap(100);
+    if (!g_userHeap) return 1;
     printf("Welcome to the Personal Wealth Management System!\n");
-
+    int choice = 0;
     while (choice != 3) {
         printf("\n--- Main Menu ---\n");
-        printf("1. Register New User\n");
-        printf("2. Login\n");
-        printf("3. Exit\n");
+        printf("1. Register New User\n2. Login\n3. Exit\n");
         choice = getIntInput("Enter your choice: ");
-
         switch (choice) {
-            case 1:
-                handleRegister();
-                break;
+            case 1: handleRegister(); break;
             case 2: {
                 UserProfile* user = handleLogin();
-                if (user != NULL) {
-                    if (strcicmp(user->name, "admin") == 0) {
-                        adminMenu();
-                    } else {
-                        loggedInMenu(user);
-                    }
+                if (user) {
+                    if (strcicmp(user->name, "admin") == 0) adminMenu();
+                    else loggedInMenu(user);
                 }
                 break;
             }
-            case 3:
-                printf("Exiting program. Cleaning up memory...\n");
-                break;
-            default:
-                printf("Invalid choice. Please try again.\n");
+            case 3: printf("Exiting...\n"); break;
+            default: printf("Invalid choice.\n");
         }
     }
-
     freeHeap(g_userHeap);
-
-    printf("Cleanup complete. Goodbye!\n");
     return 0;
 }

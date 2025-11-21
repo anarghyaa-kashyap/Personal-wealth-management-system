@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <math.h> 
 
 typedef enum InvestmentType {
     INV_NONE,
@@ -14,7 +15,6 @@ typedef enum InvestmentType {
     INV_OTHERS
 } InvestmentType;
 
- //brief Represents a single expense transaction (Linear Data Structure).
 typedef struct ExpenditureNode {
     char category[50];
     char description[100];
@@ -24,48 +24,35 @@ typedef struct ExpenditureNode {
     struct ExpenditureNode* next;
 } ExpenditureNode;
 
- //brief Represents a single node in the wealth tree (Non-Linear Data Structure).
- 
 typedef struct WealthNode {
     char name[50];
     double value;
+    double interestRate;
     struct WealthNode* firstChild;
     struct WealthNode* nextSibling;
 } WealthNode;
 
-// Forward declaration of UserProfile for the heap
 struct UserProfile;
 
- //brief Represents the Max-Heap (Priority Queue) - Non-Linear Data Structure.
-
 typedef struct UserHeap {
-    struct UserProfile** userArray; //heap implemented using array
+    struct UserProfile** userArray;
     int size;
     int capacity;
 } UserHeap;
 
- //The main struct that ties all data together.
-
 typedef struct UserProfile {
     char name[50];
-    char gender[10];
     double netWorth;
-    
     WealthNode* wealthTreeRoot;
     ExpenditureNode* expenseListHead;
 } UserProfile;
 
-
-//global variable declaration
 extern UserHeap* g_userHeap;
 
-//fn declarations
-//  1. Wealth Tree Function
 WealthNode* createWealthNode(const char* name, double value);
 void addWealthChild(WealthNode* parent, WealthNode* newChild);
 WealthNode* findWealthNode(WealthNode* root, const char* name);
 
-// 2. Max-Heap (Priority Queue) Functions
 UserHeap* createHeap(int capacity);
 void swapUsers(UserHeap* heap, int i, int j);
 void heapifyUp(UserHeap* heap, int index);
@@ -75,21 +62,16 @@ UserProfile* getTopWealthUser(UserHeap* heap);
 int findUserIndex(UserHeap* heap, UserProfile* user);
 void displayHeap(UserHeap* heap); 
 
-// 3. Core Integration Functions 
-double recursiveUpdateAndGetWorth(WealthNode* root); // 
-void logExpenseToList(UserProfile* user, const char* category, const char* desc, 
-                      double amount, InvestmentType invType);
-
-void updateInvestmentValue(UserProfile* user, const char* nodeName, double newValue);
-
+double recursiveUpdateAndGetWorth(WealthNode* root); 
+double calculateProjectedNetWorth(WealthNode* root, int years);
+void logExpenseToList(UserProfile* user, const char* category, const char* desc, double amount, InvestmentType invType);
+void manageStock(UserProfile* user, const char* ticker, double amount, double rate, int isAdding);
+void manageAsset(UserProfile* user, const char* assetName, double amount, double rate, int isAdding);
+void setWealthNodeValue(UserProfile* user, const char* nodeName, double newValue);
 void updateExpenseCategoryTotal(UserProfile* user, const char* category, double amount);
-
 void finalizeUserUpdates(UserProfile* user);
+void registerNewUser(const char* name);
 
-void registerNewUser(const char* name, const char* gender);
-
-
-//  4. Print & Cleanup Functions
 void printExpenseLog(ExpenditureNode* head);
 void printWealthTree(WealthNode* root, int indent);
 void freeExpenseList(ExpenditureNode* head);
