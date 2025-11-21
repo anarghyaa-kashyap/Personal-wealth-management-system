@@ -167,7 +167,7 @@ void handleUpdateInvestment(UserProfile* user) {
         printf("Current Interest Rate (%%): ");
         rate = getDoubleInput("");
         
-        manageStock(user, nodeName, value, rate, 0)
+        manageStock(user, nodeName, value, rate, 0);
 
     } else if (choice == 2) {
         printf("Asset nodes: gold, real estate, others\n");
@@ -409,4 +409,5 @@ int main() {
     }
     freeHeap(g_userHeap);
     return 0;
+
 }
